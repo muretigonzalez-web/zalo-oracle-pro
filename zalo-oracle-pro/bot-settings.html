@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zalo Oracle Pro — Bot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@300;400;500;600&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/bot-settings.css"/>
+  <style>
+    /* ── Bot marketplace cards ── */
+    .bot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 18px;
+    }
+    .bot-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative; overflow: hidden;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .bot-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--bot-accent, var(--cyan));
+    }
+    .bot-card:hover {
+      border-color: var(--bot-accent, var(--cyan));
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    }
+    .bot-card-header { display: flex; align-items: center; gap: 12px; }
+    .bot-card-icon {
+      width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+      background: var(--icon-bg, rgba(0,212,255,0.1));
+      border: 1px solid var(--bot-accent, rgba(0,212,255,0.3));
+      display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+    }
+    .bot-card-name {
+      font-family: var(--font-display); font-size: 0.95rem; font-weight: 800;
+      color: var(--text-primary); letter-spacing: 0.5px; line-height: 1.2;
+    }
+    .bot-card-type {
+      font-family: var(--font-mono); font-size: 0.62rem;
+      color: var(--bot-accent, var(--cyan)); margin-top: 2px; letter-spacing: 0.5px;
+    }
+    .bot-card-desc {
+      font-family: var(--font-mono); font-size: 0.7rem;
+      color: var(--text-muted); line-height: 1.6; flex: 1;
+    }
+    .bot-stars { color: var(--gold); font-size: 0.85rem; letter-spacing: 2px; }
+    .bot-card-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+    .btag {
+      font-family: var(--font-mono); font-size: 0.57rem; padding: 2px 7px;
+      border-radius: 20px; border: 1px solid; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600;
+    }
+    .btag-cyan  { color: var(--cyan);  border-color: rgba(0,212,255,0.35);  background: rgba(0,212,255,0.07);  }
+    .btag-green { color: var(--green); border-color: rgba(0,230,118,0.35);  background: rgba(0,230,118,0.07);  }
+    .btag-gold  { color: var(--gold);  border-color: rgba(245,166,35,0.35); background: rgba(245,166,35,0.07); }
+    .btag-red   { color: var(--red);   border-color: rgba(255,71,87,0.35);  background: rgba(255,71,87,0.07);  }
+    .bot-load-btn {
+      width: 100%; padding: 11px 0; border-radius: var(--radius-sm);
+      background: var(--icon-bg, rgba(0,212,255,0.1));
+      border: 1px solid var(--bot-accent, var(--cyan));
+      color: var(--bot-accent, var(--cyan));
+      font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 1px; cursor: pointer; transition: var(--transition);
+      margin-top: 4px;
+    }
+    .bot-load-btn:hover {
+      background: var(--bot-accent, var(--cyan));
+      color: #080c14;
+    }
+
+    /* ── Bot running status bar (shows when bot is active) ── */
+    .bot-status-strip {
+      background: rgba(0,230,118,0.08);
+      border: 1px solid rgba(0,230,118,0.25);
+      border-radius: var(--radius); padding: 12px 18px;
+      display: none; /* shown when running */
+    }
+    .bot-status-strip.active { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+
+    /* ── Config overlay (full-screen panel) ── */
+    .bot-config-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(4,8,16,0.92);
+      backdrop-filter: blur(10px);
+      display: none; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .bot-config-overlay.open { display: flex; }
+    .bot-config-panel {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-light);
+      border-radius: 16px;
+      width: 100%; max-width: 780px; max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.7);
+      position: relative;
+    }
+    .config-header {
+      position: sticky; top: 0; z-index: 10;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 24px; display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+    }
+    .config-bot-name {
+      font-family: var(--font-display); font-size: 1.1rem; font-weight: 900;
+      color: var(--text-primary); letter-spacing: 0.5px;
+    }
+    .config-close-btn {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--bg-card); border: 1px solid var(--border);
+      color: var(--text-muted); cursor: pointer; font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: var(--transition); flex-shrink: 0;
+    }
+    .config-close-btn:hover { border-color: var(--red); color: var(--red); }
+    .config-body { padding: 24px; }
+
+    /* Config sections */
+    .config-section { margin-bottom: 24px; }
+    .config-section-title {
+      font-family: var(--font-mono); font-size: 0.65rem; font-weight: 700;
+      color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase;
+      padding-bottom: 10px; margin-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .config-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .config-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+    /* Martingale steps preview */
+    .martingale-steps {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+    }
+    .mg-step {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 8px 12px; text-align: center;
+      min-width: 60px;
+    }
+    .mg-step .step-label { font-family: var(--font-mono); font-size: 0.58rem; color: var(--text-muted); }
+    .mg-step .step-val   { font-family: var(--font-display); font-size: 0.9rem; font-weight: 700; color: var(--cyan); margin-top: 2px; }
+
+    /* Stats bar at bottom of config */
+    .config-stats-row {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+      background: var(--bg-card); border-radius: var(--radius-sm);
+      padding: 14px; border: 1px solid var(--border);
+    }
+    .cs-item { text-align: center; }
+    .cs-label { font-family: var(--font-mono); font-size: 0.58rem; color: var(--text-muted); letter-spacing: 1px; }
+    .cs-value { font-family: var(--font-display); font-size: 1.05rem; font-weight: 800; margin-top: 3px; }
+
+    /* Trade log in panel */
+    .trade-log {
+      max-height: 220px; overflow-y: auto;
+      background: #040810; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 10px;
+      font-family: var(--font-mono); font-size: 0.68rem; line-height: 1.8;
+    }
+    .tl-entry { padding: 2px 0; }
+    .tl-win  { color: var(--green); }
+    .tl-loss { color: var(--red); }
+    .tl-info { color: var(--text-muted); }
+
+    /* Run/Stop button in config */
+    .config-run-btn {
+      width: 100%; padding: 16px; border-radius: var(--radius-sm);
+      font-family: var(--font-display); font-size: 0.9rem; font-weight: 900;
+      letter-spacing: 2px; cursor: pointer; transition: var(--transition);
+      border: none; margin-top: 4px;
+    }
+    .config-run-btn.start {
+      background: linear-gradient(135deg, var(--green), #00a854);
+      color: #080c14; box-shadow: 0 4px 20px rgba(0,230,118,0.3);
+    }
+    .config-run-btn.stop {
+      background: linear-gradient(135deg, var(--red), #c0392b);
+      color: #fff; box-shadow: 0 4px 20px rgba(255,71,87,0.3);
+    }
+    .config-run-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+    /* Active bot indicator on card */
+    .bot-card.running::before {
+      animation: pulse-bar 1.2s ease-in-out infinite alternate;
+    }
+    @keyframes pulse-bar { from { opacity: 0.6; } to { opacity: 1; box-shadow: 0 0 8px var(--bot-accent); } }
+    .running-badge {
+      position: absolute; top: 12px; right: 12px;
+      background: rgba(0,230,118,0.15); border: 1px solid rgba(0,230,118,0.4);
+      color: var(--green); border-radius: 20px; padding: 2px 8px;
+      font-family: var(--font-mono); font-size: 0.58rem; font-weight: 700;
+      letter-spacing: 0.5px; display: none;
+    }
+    .bot-card.running .running-badge { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav class="navbar">
+  <a href="dashboard.html" class="navbar-brand">
+    <svg width="30" height="30" viewBox="0 0 48 48" fill="none">
+      <polygon points="24,3 45,13.5 45,34.5 24,45 3,34.5 3,13.5" stroke="#00d4ff" stroke-width="1.5" fill="rgba(0,212,255,0.08)"/>
+      <circle cx="24" cy="24" r="5" fill="#00d4ff"/>
+    </svg>
+    <span class="brand-name">ZALO ORACLE PRO</span>
+    <span class="brand-tag">BETA</span>
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="dashboard.html"       class="nav-link">⬛ Home</a></li>
+    <li><a href="bot-settings.html"    class="nav-link active">🤖 Bot</a></li>
+    <li><a href="manual-trader.html"   class="nav-link">⚡ Manual</a></li>
+    <li><a href="analysis.html"        class="nav-link">🧠 Analysis</a></li>
+    <li><a href="strategies.html"      class="nav-link">📊 Strategies</a></li>
+    <li><a href="risk-calculator.html" class="nav-link">🛡️ Risk</a></li>
+  </ul>
+  <div class="navbar-right">
+    <div class="balance-display">
+      <span class="balance-label">Balance</span>
+      <span class="balance-amount" data-balance>-- USD</span>
+    </div>
+    <div class="status-bar">
+      <div id="status-dot"></div>
+      <span id="status-text">Connecting...</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Exit</button>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="page-content">
+
+    <!-- ── RUNNING BOT STATUS STRIP ── -->
+    <div class="bot-status-strip" id="status-strip">
+      <div class="flex flex-gap-16" style="flex-wrap:wrap;align-items:center;">
+        <span class="badge badge-green" style="animation:glow-pulse 1.5s ease-in-out infinite;">● BOT RUNNING</span>
+        <span class="mono text-muted" style="font-size:0.72rem;">Bot: <strong class="text-cyan" id="strip-bot-name">--</strong></span>
+        <span class="mono text-muted" style="font-size:0.72rem;">Market: <strong class="text-cyan" id="strip-market">--</strong></span>
+        <span class="mono text-muted" style="font-size:0.72rem;">Stake: <strong class="text-gold" id="strip-stake">$--</strong></span>
+        <span class="mono text-muted" style="font-size:0.72rem;">P&L: <strong id="strip-pnl">$0.00</strong></span>
+        <span class="mono text-muted" style="font-size:0.72rem;">Runs: <strong class="text-cyan" id="strip-runs">0</strong></span>
+      </div>
+      <button class="btn btn-sm" style="background:rgba(255,71,87,0.15);border:1px solid rgba(255,71,87,0.4);color:var(--red);" onclick="stopCurrentBot()">■ STOP BOT</button>
+    </div>
+
+    <!-- ── PAGE HEADER ── -->
+    <div class="flex-between mb-20 mt-16" style="flex-wrap:wrap;gap:10px;">
+      <div>
+        <h1 style="font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:var(--text-primary);letter-spacing:1px;">🤖 Trading Bots</h1>
+        <p class="mono text-muted mt-4" style="font-size:0.72rem;">Select a bot to configure and launch. Each bot has unique strategy logic and risk settings.</p>
+      </div>
+      <div class="flex flex-gap-8">
+        <span class="btag btag-green" style="font-size:0.65rem;padding:4px 10px;">7 Bots Available</span>
+        <span class="btag btag-cyan" style="font-size:0.65rem;padding:4px 10px;">Live Trading</span>
+      </div>
+    </div>
+
+    <!-- ── BOT GRID ── -->
+    <div class="bot-grid" id="bot-grid"></div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- BOT CONFIG OVERLAY -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="bot-config-overlay" id="bot-config-overlay">
+  <div class="bot-config-panel">
+    <!-- Header -->
+    <div class="config-header">
+      <div class="flex flex-gap-12" style="align-items:center;">
+        <span id="cfg-icon" style="font-size:1.6rem;">🤖</span>
+        <div>
+          <div class="config-bot-name" id="cfg-name">Bot Name</div>
+          <div class="mono text-muted" style="font-size:0.65rem;" id="cfg-type">Strategy Type</div>
+        </div>
+      </div>
+      <button class="config-close-btn" onclick="closeConfig()">✕</button>
+    </div>
+
+    <div class="config-body">
+
+      <!-- Stats bar (live stats when running) -->
+      <div class="config-stats-row" id="cfg-stats-row">
+        <div class="cs-item"><div class="cs-label">RUNS</div><div class="cs-value text-cyan" id="cfg-stat-runs">0</div></div>
+        <div class="cs-item"><div class="cs-label">WON</div><div class="cs-value text-green" id="cfg-stat-won">0</div></div>
+        <div class="cs-item"><div class="cs-label">LOST</div><div class="cs-value text-red" id="cfg-stat-lost">0</div></div>
+        <div class="cs-item"><div class="cs-label">WIN RATE</div><div class="cs-value" id="cfg-stat-wr">--%</div></div>
+        <div class="cs-item"><div class="cs-label">P&L</div><div class="cs-value" id="cfg-stat-pnl">$0.00</div></div>
+      </div>
+
+      <!-- Section: Trade Parameters -->
+      <div class="config-section mt-20">
+        <div class="config-section-title">⚙️ Trade Parameters</div>
+        <div class="config-row">
+          <div class="form-group">
+            <label class="form-label">Market</label>
+            <select class="form-select" id="cfg-market">
+              <optgroup label="Volatility (1s)">
+                <option value="1HZ10V">Vol 10 (1s)</option>
+                <option value="1HZ25V">Vol 25 (1s)</option>
+                <option value="1HZ50V">Vol 50 (1s)</option>
+                <option value="1HZ75V">Vol 75 (1s)</option>
+                <option value="1HZ100V">Vol 100 (1s)</option>
+              </optgroup>
+              <optgroup label="Volatility">
+                <option value="R_10">Vol 10</option>
+                <option value="R_25">Vol 25</option>
+                <option value="R_50">Vol 50</option>
+                <option value="R_75">Vol 75</option>
+                <option value="R_100">Vol 100</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Trade Type</label>
+            <select class="form-select" id="cfg-trade-type">
+              <option value="DIGITOVER">Over/Under</option>
+              <option value="DIGITEVEN">Even/Odd</option>
+              <option value="DIGITMATCH">Matches/Differs</option>
+              <option value="CALL">Rise/Fall</option>
+            </select>
+          </div>
+        </div>
+        <div class="config-row mt-10">
+          <div class="form-group">
+            <label class="form-label">Contract Type</label>
+            <select class="form-select" id="cfg-contract-type">
+              <option value="BOTH">Both (alternating)</option>
+              <option value="DIGITOVER">Over Only</option>
+              <option value="DIGITUNDER">Under Only</option>
+              <option value="DIGITEVEN">Even Only</option>
+              <option value="DIGITODD">Odd Only</option>
+              <option value="DIGITMATCH">Match Only</option>
+              <option value="DIGITDIFF">Differ Only</option>
+              <option value="CALL">Rise Only</option>
+              <option value="PUT">Fall Only</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Barrier / Digit</label>
+            <select class="form-select" id="cfg-barrier">
+              <option value="0">0</option><option value="1">1</option>
+              <option value="2">2</option><option value="3">3</option>
+              <option value="4">4</option><option value="5" selected>5</option>
+              <option value="6">6</option><option value="7">7</option>
+              <option value="8">8</option><option value="9">9</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Stake & Money Management -->
+      <div class="config-section">
+        <div class="config-section-title">💰 Stake & Money Management</div>
+        <div class="config-row">
+          <div class="form-group">
+            <label class="form-label">Base Stake ($)</label>
+            <input class="form-input" type="number" id="cfg-stake" value="0.35" min="0.35" step="0.01" oninput="updateMartingalePreview()"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Martingale Multiplier</label>
+            <input class="form-input" type="number" id="cfg-multiplier" value="2.2" min="1.5" max="5" step="0.1" oninput="updateMartingalePreview()"/>
+          </div>
+        </div>
+        <div class="config-row mt-10">
+          <div class="form-group">
+            <label class="form-label">Max Martingale Steps</label>
+            <select class="form-select" id="cfg-max-steps" onchange="updateMartingalePreview()">
+              <option value="1">1 (No Martingale)</option>
+              <option value="2">2 Steps</option>
+              <option value="3">3 Steps</option>
+              <option value="4" selected>4 Steps</option>
+              <option value="5">5 Steps</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Duration (Ticks)</label>
+            <input class="form-input" type="number" id="cfg-duration" value="1" min="1" max="10"/>
+          </div>
+        </div>
+        <!-- Martingale preview -->
+        <div class="mt-12">
+          <div class="mono text-muted mb-8" style="font-size:0.62rem;letter-spacing:1px;">MARTINGALE STAKE STEPS PREVIEW</div>
+          <div class="martingale-steps" id="mg-steps-preview"></div>
+        </div>
+      </div>
+
+      <!-- Section: Risk Controls -->
+      <div class="config-section">
+        <div class="config-section-title">🛡️ Risk Controls</div>
+        <div class="config-row-3">
+          <div class="form-group">
+            <label class="form-label">Take Profit ($)</label>
+            <input class="form-input" type="number" id="cfg-take-profit" value="2.00" min="0.1" step="0.1"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Stop Loss ($)</label>
+            <input class="form-input" type="number" id="cfg-stop-loss" value="3.00" min="0.1" step="0.1"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Max Consecutive Losses</label>
+            <input class="form-input" type="number" id="cfg-max-losses" value="4" min="1" max="10"/>
+          </div>
+        </div>
+        <!-- Risk summary -->
+        <div class="mt-12" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;">
+          <div class="flex-between flex-wrap" style="gap:6px;">
+            <span class="mono text-muted" style="font-size:0.65rem;">Max Exposure: <strong class="text-red" id="risk-max-exposure">$0.00</strong></span>
+            <span class="mono text-muted" style="font-size:0.65rem;">Required Balance: <strong class="text-gold" id="risk-required">$0.00</strong></span>
+            <span class="mono text-muted" style="font-size:0.65rem;">Risk/Reward: <strong class="text-cyan" id="risk-ratio">1:1</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Trade Log -->
+      <div class="config-section">
+        <div class="config-section-title">📋 Trade Log</div>
+        <div class="trade-log" id="cfg-trade-log">
+          <div class="tl-info">Waiting for bot to start...</div>
+        </div>
+      </div>
+
+      <!-- Run / Stop -->
+      <button class="config-run-btn start" id="cfg-run-btn" onclick="handleConfigRun()">
+        ▶ RUN BOT
+      </button>
+
+    </div>
+  </div>
+</div>
+
+<script src="js/utils.js"></script>
+<script src="js/deriv-api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ticks.js"></script>
+<script src="js/bot-engine.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  Auth.autoLogin();
+  BotEngine.init();
+
+  let activeBot   = null;   // currently configured bot definition
+  let isRunning   = false;
+
+  // ── Bot definitions ──────────────────────────────────────────────
+  const BOTS = [
+    {
+      id        : 'even-odd-pro',
+      icon      : '⚖️',
+      name      : 'Even/Odd Pro',
+      type      : 'Parity Reversion Strategy',
+      desc      : 'Monitors parity imbalance in real time and enters immediately after a streak breaks. Uses smart barrier avoidance.',
+      stars     : 5,
+      tags      : [['Beginner','btag-green'],['Even/Odd','btag-cyan'],['Auto Entry','btag-gold']],
+      accent    : 'var(--cyan)',
+      iconBg    : 'rgba(0,212,255,0.12)',
+      defaults  : { tradeType:'DIGITEVEN', contractType:'BOTH', barrier:'5', stake:0.35, multiplier:2.2, maxSteps:4, takeProfit:2.00, stopLoss:3.00, maxLosses:4, duration:1 }
+    },
+    {
+      id        : 'over-under-sniper',
+      icon      : '🎯',
+      name      : 'Over/Under Sniper',
+      type      : 'Barrier Reversion Strategy',
+      desc      : 'Scans Over/Under dominance and fires when statistical edge exceeds threshold. Adjustable barrier for any market.',
+      stars     : 5,
+      tags      : [['Intermediate','btag-gold'],['Over/Under','btag-green'],['High Accuracy','btag-cyan']],
+      accent    : 'var(--green)',
+      iconBg    : 'rgba(0,230,118,0.12)',
+      defaults  : { tradeType:'DIGITOVER', contractType:'BOTH', barrier:'5', stake:0.50, multiplier:2.2, maxSteps:4, takeProfit:2.00, stopLoss:3.50, maxLosses:4, duration:1 }
+    },
+    {
+      id        : 'hit-run',
+      icon      : '⚡',
+      name      : 'Hit & Run Bot',
+      type      : 'Momentum Burst Strategy',
+      desc      : 'Quick entry and immediate exit. Targets Over 1 and Under 8 setups using digit occurrence filters and 3-tick sync.',
+      stars     : 5,
+      tags      : [['Advanced','btag-red'],['High Speed','btag-cyan'],['Tick Sync','btag-gold']],
+      accent    : 'var(--gold)',
+      iconBg    : 'rgba(245,166,35,0.12)',
+      defaults  : { tradeType:'DIGITOVER', contractType:'DIGITOVER', barrier:'1', stake:0.50, multiplier:2.5, maxSteps:3, takeProfit:2.50, stopLoss:3.00, maxLosses:3, duration:1 }
+    },
+    {
+      id        : 'differs-machine',
+      icon      : '🔢',
+      name      : 'Differs Machine',
+      type      : 'Matches/Differs Strategy',
+      desc      : 'Bets DIFFERS on the HOT digit. Since any specific digit appears only ~10% of the time, differs wins ~90% of trades.',
+      stars     : 4,
+      tags      : [['High Win Rate','btag-green'],['Differs','btag-red'],['Conservative','btag-cyan']],
+      accent    : 'var(--red)',
+      iconBg    : 'rgba(255,71,87,0.10)',
+      defaults  : { tradeType:'DIGITMATCH', contractType:'DIGITDIFF', barrier:'0', stake:0.35, multiplier:2.0, maxSteps:2, takeProfit:1.50, stopLoss:2.00, maxLosses:3, duration:1 }
+    },
+    {
+      id        : 'rise-fall-trend',
+      icon      : '📈',
+      name      : 'Rise/Fall Trend Bot',
+      type      : 'Price Direction Strategy',
+      desc      : 'Detects consecutive rises or falls and bets on reversal. Works best in volatile markets with clear momentum shifts.',
+      stars     : 4,
+      tags      : [['Beginner','btag-green'],['Rise/Fall','btag-cyan'],['Momentum','btag-gold']],
+      accent    : '#a78bfa',
+      iconBg    : 'rgba(167,139,250,0.12)',
+      defaults  : { tradeType:'CALL', contractType:'BOTH', barrier:'5', stake:0.50, multiplier:2.0, maxSteps:3, takeProfit:2.00, stopLoss:3.00, maxLosses:3, duration:1 }
+    },
+    {
+      id        : 'martingale-control',
+      icon      : '💰',
+      name      : 'Controlled Martingale',
+      type      : 'Stake Recovery Strategy',
+      desc      : 'Disciplined martingale with hard step limits. Recovers losses using progressive staking — strict 4-step maximum.',
+      stars     : 4,
+      tags      : [['Advanced','btag-red'],['High Risk','btag-red'],['Recovery','btag-gold']],
+      accent    : 'var(--red)',
+      iconBg    : 'rgba(255,71,87,0.08)',
+      defaults  : { tradeType:'DIGITEVEN', contractType:'BOTH', barrier:'5', stake:0.35, multiplier:2.2, maxSteps:4, takeProfit:3.00, stopLoss:5.00, maxLosses:4, duration:1 }
+    },
+    {
+      id        : 'compound-daily',
+      icon      : '🌱',
+      name      : 'Compound Daily Bot',
+      type      : 'Compound Growth Strategy',
+      desc      : 'Auto-adjusts stake as account grows. Targets 10% daily profit then stops. Built around the $5 compound growth plan.',
+      stars     : 5,
+      tags      : [['All Levels','btag-green'],['Compound','btag-cyan'],['Auto-Stake','btag-gold']],
+      accent    : 'var(--green)',
+      iconBg    : 'rgba(0,230,118,0.08)',
+      defaults  : { tradeType:'DIGITEVEN', contractType:'BOTH', barrier:'5', stake:0.35, multiplier:2.0, maxSteps:3, takeProfit:1.00, stopLoss:2.00, maxLosses:3, duration:1 }
+    },
+  ];
+
+  // ── Render bot cards ───────────────────────────────────────────
+  const grid = document.getElementById('bot-grid');
+  grid.innerHTML = BOTS.map(b => `
+    <div class="bot-card" id="card-${b.id}"
+         style="--bot-accent:${b.accent};--icon-bg:${b.iconBg};"
+         onclick="openBotConfig('${b.id}')">
+      <div class="running-badge">● RUNNING</div>
+      <div class="bot-card-header">
+        <div class="bot-card-icon">${b.icon}</div>
+        <div>
+          <div class="bot-card-name">${b.name}</div>
+          <div class="bot-card-type">${b.type}</div>
+        </div>
+      </div>
+      <div class="bot-stars">${'★'.repeat(b.stars)}${'☆'.repeat(5-b.stars)}</div>
+      <div class="bot-card-desc">${b.desc}</div>
+      <div class="bot-card-tags">${b.tags.map(([t,c]) => `<span class="btag ${c}">${t}</span>`).join('')}</div>
+      <button class="bot-load-btn">⚙️ CONFIGURE &amp; LAUNCH</button>
+    </div>`).join('');
+
+  // ── Open config overlay ────────────────────────────────────────
+  window.openBotConfig = (botId) => {
+    const bot = BOTS.find(b => b.id === botId);
+    if (!bot) return;
+    activeBot = bot;
+
+    // Populate header
+    document.getElementById('cfg-icon').textContent = bot.icon;
+    document.getElementById('cfg-name').textContent = bot.name;
+    document.getElementById('cfg-type').textContent = bot.type;
+
+    // Populate defaults
+    const d = bot.defaults;
+    document.getElementById('cfg-market').value        = '1HZ10V';
+    document.getElementById('cfg-trade-type').value    = d.tradeType;
+    document.getElementById('cfg-contract-type').value = d.contractType;
+    document.getElementById('cfg-barrier').value       = d.barrier;
+    document.getElementById('cfg-stake').value         = d.stake;
+    document.getElementById('cfg-multiplier').value    = d.multiplier;
+    document.getElementById('cfg-max-steps').value     = d.maxSteps;
+    document.getElementById('cfg-duration').value      = d.duration;
+    document.getElementById('cfg-take-profit').value   = d.takeProfit;
+    document.getElementById('cfg-stop-loss').value     = d.stopLoss;
+    document.getElementById('cfg-max-losses').value    = d.maxLosses;
+
+    updateMartingalePreview();
+
+    // Update run button state
+    const runBtn = document.getElementById('cfg-run-btn');
+    if (BotEngine.getIsRunning()) {
+      runBtn.textContent = '■ STOP BOT';
+      runBtn.className = 'config-run-btn stop';
+    } else {
+      runBtn.textContent = '▶ RUN BOT';
+      runBtn.className = 'config-run-btn start';
+    }
+
+    // Open overlay
+    document.getElementById('bot-config-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closeConfig = () => {
+    document.getElementById('bot-config-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  };
+
+  // Close on overlay background click
+  document.getElementById('bot-config-overlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('bot-config-overlay')) closeConfig();
+  });
+
+  // Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeConfig();
+  });
+
+  // ── Martingale preview ─────────────────────────────────────────
+  window.updateMartingalePreview = () => {
+    const base       = parseFloat(document.getElementById('cfg-stake').value) || 0.35;
+    const multiplier = parseFloat(document.getElementById('cfg-multiplier').value) || 2.2;
+    const maxSteps   = parseInt(document.getElementById('cfg-max-steps').value) || 4;
+    const stopLoss   = parseFloat(document.getElementById('cfg-stop-loss').value) || 3;
+    const takeProfit = parseFloat(document.getElementById('cfg-take-profit').value) || 2;
+
+    const steps = Utils.getMartingaleSequence(base, multiplier, maxSteps);
+    const preview = document.getElementById('mg-steps-preview');
+    if (preview) {
+      preview.innerHTML = steps.map((s, i) => `
+        <div class="mg-step">
+          <div class="step-label">Step ${i+1}</div>
+          <div class="step-val">$${s.toFixed(2)}</div>
+        </div>`).join('');
+    }
+
+    // Update risk summary
+    const totalExposure = steps.reduce((a, b) => a + b, 0);
+    const requiredBal   = totalExposure + (stopLoss * 0.5);
+    const ratio         = (takeProfit / stopLoss).toFixed(2);
+    const expEl = document.getElementById('risk-max-exposure');
+    const reqEl = document.getElementById('risk-required');
+    const ratioEl = document.getElementById('risk-ratio');
+    if (expEl) expEl.textContent = `$${totalExposure.toFixed(2)}`;
+    if (reqEl) reqEl.textContent = `$${requiredBal.toFixed(2)}`;
+    if (ratioEl) { ratioEl.textContent = `1:${ratio}`; ratioEl.style.color = parseFloat(ratio)>=1 ? 'var(--green)' : 'var(--red)'; }
+  };
+
+  // ── Run/Stop from config ───────────────────────────────────────
+  window.handleConfigRun = () => {
+    if (BotEngine.getIsRunning()) {
+      BotEngine.stop('Manual stop');
+    } else {
+      // Build config from inputs
+      const config = {
+        symbol       : document.getElementById('cfg-market').value,
+        tradeType    : document.getElementById('cfg-trade-type').value,
+        contractType : document.getElementById('cfg-contract-type').value,
+        barrier      : parseInt(document.getElementById('cfg-barrier').value),
+        baseStake    : parseFloat(document.getElementById('cfg-stake').value),
+        multiplier   : parseFloat(document.getElementById('cfg-multiplier').value),
+        maxSteps     : parseInt(document.getElementById('cfg-max-steps').value),
+        duration     : parseInt(document.getElementById('cfg-duration').value),
+        takeProfit   : parseFloat(document.getElementById('cfg-take-profit').value),
+        stopLoss     : parseFloat(document.getElementById('cfg-stop-loss').value),
+        maxLosses    : parseInt(document.getElementById('cfg-max-losses').value),
+      };
+
+      BotEngine.setConfig(config);
+      Ticks.subscribe(config.symbol);
+      BotEngine.start();
+
+      logToPanel(`▶ ${activeBot?.name || 'Bot'} started — ${config.symbol}`);
+      logToPanel(`Stake: $${config.baseStake} | TP: $${config.takeProfit} | SL: $${config.stopLoss}`);
+    }
+  };
+
+  window.stopCurrentBot = () => {
+    BotEngine.stop('Manual stop');
+  };
+
+  // ── Log to trade panel ─────────────────────────────────────────
+  const logToPanel = (msg, type = 'info') => {
+    const log = document.getElementById('cfg-trade-log');
+    if (!log) return;
+    const line = document.createElement('div');
+    line.className = `tl-entry tl-${type}`;
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    log.insertBefore(line, log.firstChild);
+    if (log.children.length > 80) log.removeChild(log.lastChild);
+  };
+
+  // ── BotEngine callbacks ────────────────────────────────────────
+  BotEngine.onTrade((trade) => {
+    const result = trade.profit > 0 ? 'win' : 'loss';
+    const msg = `${result.toUpperCase()} $${Math.abs(trade.profit || 0).toFixed(2)} | Digit:${trade.digit ?? '--'} | Stake:$${trade.stake?.toFixed(2) ?? '--'}`;
+    logToPanel(msg, result === 'win' ? 'win' : 'loss');
+  });
+
+  BotEngine.onStats((stats) => {
+    isRunning = BotEngine.getIsRunning();
+
+    // Update config panel stats
+    const wr = stats.runs > 0 ? Math.round((stats.won / stats.runs) * 100) : 0;
+    const pnl = stats.pnl || 0;
+    document.getElementById('cfg-stat-runs').textContent = stats.runs;
+    document.getElementById('cfg-stat-won').textContent  = stats.won;
+    document.getElementById('cfg-stat-lost').textContent = stats.lost;
+    document.getElementById('cfg-stat-wr').textContent   = `${wr}%`;
+    const pnlEl = document.getElementById('cfg-stat-pnl');
+    pnlEl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
+    pnlEl.style.color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+
+    // Update run button
+    const runBtn = document.getElementById('cfg-run-btn');
+    if (isRunning) {
+      runBtn.textContent = '■ STOP BOT';
+      runBtn.className = 'config-run-btn stop';
+    } else {
+      runBtn.textContent = '▶ RUN BOT';
+      runBtn.className = 'config-run-btn start';
+    }
+
+    // Update status strip
+    const strip = document.getElementById('status-strip');
+    if (isRunning) {
+      strip.classList.add('active');
+      document.getElementById('strip-bot-name').textContent = activeBot?.name || '--';
+      document.getElementById('strip-market').textContent   = BotEngine.getConfig?.()?.symbol || '--';
+      document.getElementById('strip-stake').textContent    = `$${BotEngine.getConfig?.()?.baseStake || '--'}`;
+      document.getElementById('strip-runs').textContent     = stats.runs;
+      const stripPnl = document.getElementById('strip-pnl');
+      stripPnl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
+      stripPnl.style.color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    } else {
+      strip.classList.remove('active');
+    }
+
+    // Mark running card
+    document.querySelectorAll('.bot-card').forEach(c => c.classList.remove('running'));
+    if (isRunning && activeBot) {
+      const card = document.getElementById('card-' + activeBot.id);
+      if (card) card.classList.add('running');
+    }
+  });
+
+  // Initialise martingale preview
+  updateMartingalePreview();
+});
+</script>
+</body>
+</html>

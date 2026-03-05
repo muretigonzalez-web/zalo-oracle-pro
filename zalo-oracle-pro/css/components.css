@@ -1,0 +1,39 @@
+/* ZALO ORACLE PRO — components.css — shared reusable components */
+
+@keyframes toastSlideIn { from { opacity:0; transform:translateX(36px); } to { opacity:1; transform:translateX(0); } }
+
+/* PRESET CARDS */
+.preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px,1fr)); gap: 12px; }
+.preset-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: var(--transition); text-decoration: none; }
+.preset-card:hover { border-color: var(--cyan); background: var(--cyan-dim); transform: translateY(-2px); }
+.preset-card .preset-icon { font-size: 1.7rem; margin-bottom: 7px; display: block; }
+.preset-card .preset-name { font-family: var(--font-display); font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
+.preset-card .preset-desc { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
+
+/* STRATEGY CARD */
+.strategy-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; transition: var(--transition); }
+.strategy-card:hover { border-color: var(--border-light); box-shadow: var(--shadow-card); }
+.strategy-card .strategy-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 11px; }
+.strategy-card .strategy-title  { font-family: var(--font-display); font-size: 0.92rem; font-weight: 700; color: var(--text-primary); }
+.strategy-card .strategy-rule   { display: flex; align-items: flex-start; gap: 7px; margin-bottom: 7px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-secondary); }
+.strategy-card .strategy-rule::before { content: '→'; color: var(--gold); flex-shrink: 0; }
+.strategy-card .strategy-rule strong  { color: var(--gold); }
+.strategy-card .success-rate-bar { margin-top: 13px; padding-top: 11px; border-top: 1px solid var(--border); }
+.strategy-card .success-rate-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; display: flex; justify-content: space-between; margin-bottom: 5px; }
+
+/* INPUT STEPPER */
+.input-stepper { display: flex; gap: 0; }
+.input-stepper .form-input { border-radius: 0; text-align: center; flex: 1; }
+.step-btn { width: 34px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); font-size: 1rem; cursor: pointer; transition: var(--transition-fast); display: flex; align-items: center; justify-content: center; }
+.step-btn:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.step-btn:last-child  { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.step-btn:hover { color: var(--cyan); background: var(--cyan-dim); }
+
+/* MARKET PILL */
+.market-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; background: var(--bg-card); border: 1px solid var(--border); font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-secondary); cursor: pointer; transition: var(--transition-fast); }
+.market-pill:hover, .market-pill.active { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
+.market-pill .market-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+
+/* COPY TRADE ROW */
+.copy-trade-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); transition: var(--transition-fast); }
+.copy-trade-row:hover { border-color: var(--border-light); }
