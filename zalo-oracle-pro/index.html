@@ -74,93 +74,102 @@
   <div class="login-right">
     <div class="login-card">
       <div class="login-title">Connect Account</div>
-      <div class="login-subtitle">Enter your Deriv API token to get started</div>
+      <div class="login-subtitle">Securely login via your Deriv account</div>
 
-      <div class="token-guide mt-20">
-        <div class="guide-title">📋 How to get your API token:</div>
-        <div class="guide-steps">
-          <div class="guide-step">
-            <div class="step-num">1</div>
-            <span>Go to <strong>app.deriv.com</strong> → Account Settings</span>
-          </div>
-          <div class="guide-step">
-            <div class="step-num">2</div>
-            <span>Click <strong>API Token</strong> → Create with <strong>Read + Trade</strong> scope</span>
-          </div>
-          <div class="guide-step">
-            <div class="step-num">3</div>
-            <span>Copy the token and paste it below</span>
+      <!-- OAuth loading state (shown while processing callback) -->
+      <div id="auth-loading" style="display:none; text-align:center; padding:30px 0;">
+        <div style="font-size:2rem; margin-bottom:14px;">⏳</div>
+        <div style="font-family:var(--font-mono);font-size:0.82rem;color:var(--text-secondary);" id="auth-loading-text">
+          Authorizing with Deriv...
+        </div>
+        <div style="margin-top:12px;">
+          <div style="width:100%;height:3px;background:var(--bg-secondary);border-radius:2px;overflow:hidden;">
+            <div style="height:100%;background:linear-gradient(90deg,var(--cyan),var(--gold));width:60%;animation:loadingBar 1.5s ease-in-out infinite;border-radius:2px;"></div>
           </div>
         </div>
       </div>
 
-      <div class="form-group mt-20">
-        <label class="form-label">API Token</label>
-        <div class="token-input-wrap">
-          <input type="password" class="form-input" id="api-token-input"
-            placeholder="Paste your Deriv API token here"
-            autocomplete="off" spellcheck="false"/>
-          <button class="token-eye-btn" id="token-eye" type="button">👁</button>
+      <!-- Normal login button (hidden while loading) -->
+      <div id="login-form">
+        <div class="oauth-info mt-20" style="
+          background:var(--bg-secondary);border:1px solid var(--border);
+          border-radius:var(--radius-sm);padding:16px;
+          font-family:var(--font-mono);font-size:0.76rem;
+          color:var(--text-secondary);line-height:1.8;">
+          <div style="color:var(--cyan);font-weight:700;margin-bottom:8px;">🔐 Secure OAuth Login</div>
+          You will be redirected to Deriv to authorise Zalo Oracle Pro.<br>
+          No password is stored here — Deriv handles all authentication.
         </div>
-      </div>
 
-      <div class="mt-12">
-        <label class="remember-label">
-          <input type="checkbox" id="remember-token" checked/>
-          Remember token on this device
-        </label>
-      </div>
+        <div id="login-error" class="login-error mt-12" style="display:none;"></div>
 
-      <div class="login-error" id="login-error" style="display:none;">
-        ⚠️ <span id="login-error-text">Connection failed.</span>
-      </div>
+        <button class="btn btn-primary btn-full mt-20" id="login-btn" style="
+          font-family:var(--font-display);font-size:0.95rem;font-weight:700;
+          letter-spacing:1px;padding:16px 24px;border-radius:var(--radius-sm);
+          box-shadow:0 4px 20px rgba(0,212,255,0.3);">
+          ⚡ LOGIN WITH DERIV
+        </button>
 
-      <button class="btn btn-primary btn-full mt-20" id="login-btn">
-        ⚡ CONNECT TO DERIV
-      </button>
-
-      <div class="deriv-branding-row mt-16">
-        <div class="status-bar">
-          <div id="status-dot"></div>
-          <span id="status-text">Not connected</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-family:var(--font-mono);font-size:0.62rem;color:var(--text-muted);">Powered by</span>
-          <span style="font-family:var(--font-display);font-size:0.72rem;font-weight:700;color:var(--red);">deriv</span>
+        <div class="deriv-branding-row mt-16">
+          <div class="status-bar">
+            <div id="status-dot"></div>
+            <span id="status-text">Not connected</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-family:var(--font-mono);font-size:0.62rem;color:var(--text-muted);">Powered by</span>
+            <span style="font-family:var(--font-display);font-size:0.72rem;font-weight:700;color:var(--red);">deriv</span>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
+<style>
+@keyframes loadingBar {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(0%);    }
+  100% { transform: translateX(100%);  }
+}
+</style>
+
 <script src="js/utils.js"></script>
 <script src="js/deriv-api.js"></script>
 <script src="js/auth.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  // If already logged in, go straight to dashboard
-  if (localStorage.getItem('zalo_api_token')) {
-    window.location.href = 'dashboard.html';
+document.addEventListener('DOMContentLoaded', async () => {
+
+  // ── Check if this is an OAuth callback (URL has ?code=...) ──
+  const urlParams = new URLSearchParams(window.location.search);
+  const oauthCode = urlParams.get('code');
+
+  if (oauthCode) {
+    // CALLBACK MODE — process the OAuth code from Deriv
+    document.getElementById('auth-loading').style.display = 'block';
+    document.getElementById('login-form').style.display   = 'none';
+
+    const handled = await Auth.handleOAuthCallback();
+    if (!handled) {
+      // Failed — show login again
+      document.getElementById('auth-loading').style.display = 'none';
+      document.getElementById('login-form').style.display   = 'block';
+      Auth.showError('Login failed. Please try again.');
+    }
     return;
   }
 
-  // Show/hide token toggle
-  const eyeBtn   = document.getElementById('token-eye');
-  const tokenInp = document.getElementById('api-token-input');
-  eyeBtn.addEventListener('click', () => {
-    const show = tokenInp.type === 'password';
-    tokenInp.type      = show ? 'text' : 'password';
-    eyeBtn.textContent = show ? '🙈' : '👁';
-  });
+  // ── Check if already logged in ──
+  if (Auth.hasSession()) {
+    document.getElementById('auth-loading').style.display = 'block';
+    document.getElementById('auth-loading-text').textContent = 'Restoring session...';
+    document.getElementById('login-form').style.display = 'none';
+    setTimeout(() => { window.location.href = 'dashboard.html'; }, 500);
+    return;
+  }
 
-  // Submit on Enter key
-  tokenInp.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') document.getElementById('login-btn').click();
-  });
-
-  // Login button — Auth.login() reads #api-token-input directly
+  // ── Normal login page ──
   document.getElementById('login-btn').addEventListener('click', () => {
-    Auth.login();
+    Auth.login(); // → DerivAPI.redirectToOAuth()
   });
 });
 </script>
