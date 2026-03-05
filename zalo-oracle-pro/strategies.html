@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zalo Oracle Pro — Strategies</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@300;400;500;600&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/strategies.css"/>
+  <style>
+    /* ── Strategy card grid ── */
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .strategy-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg, 12px);
+      padding: 28px 24px 24px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex; flex-direction: column; gap: 14px;
+      position: relative; overflow: hidden;
+    }
+    .strategy-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 3px; background: var(--card-accent, var(--cyan));
+      transition: var(--transition);
+    }
+    .strategy-card:hover {
+      border-color: var(--card-accent, var(--cyan));
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .strategy-card-icon {
+      width: 56px; height: 56px; border-radius: 14px;
+      background: var(--icon-bg, rgba(0,212,255,0.12));
+      border: 1px solid var(--icon-border, rgba(0,212,255,0.3));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem;
+    }
+    .strategy-card-title {
+      font-family: var(--font-display); font-size: 1.05rem; font-weight: 800;
+      color: var(--text-primary); letter-spacing: 0.5px;
+    }
+    .strategy-card-desc {
+      font-family: var(--font-mono); font-size: 0.72rem;
+      color: var(--text-muted); line-height: 1.6; flex: 1;
+    }
+    .strategy-card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .stag {
+      font-family: var(--font-mono); font-size: 0.58rem; font-weight: 600;
+      padding: 3px 8px; border-radius: 20px; border: 1px solid;
+      letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .stag-cyan  { color: var(--cyan);  border-color: rgba(0,212,255,0.35);  background: rgba(0,212,255,0.08);  }
+    .stag-green { color: var(--green); border-color: rgba(0,230,118,0.35);  background: rgba(0,230,118,0.08);  }
+    .stag-gold  { color: var(--gold);  border-color: rgba(245,166,35,0.35); background: rgba(245,166,35,0.08); }
+    .stag-red   { color: var(--red);   border-color: rgba(255,71,87,0.35);  background: rgba(255,71,87,0.08);  }
+    .strategy-card .explore-btn {
+      margin-top: 6px;
+      padding: 11px 0; width: 100%;
+      background: var(--icon-bg, rgba(0,212,255,0.1));
+      border: 1px solid var(--card-accent, var(--cyan));
+      color: var(--card-accent, var(--cyan));
+      border-radius: var(--radius-sm); cursor: pointer;
+      font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600;
+      letter-spacing: 1px; transition: var(--transition);
+    }
+    .strategy-card .explore-btn:hover {
+      background: var(--card-accent, var(--cyan));
+      color: #080c14;
+    }
+
+    /* ── Difficulty badge ── */
+    .diff-badge {
+      position: absolute; top: 16px; right: 16px;
+      font-family: var(--font-mono); font-size: 0.58rem; font-weight: 700;
+      padding: 3px 8px; border-radius: 20px; letter-spacing: 0.5px;
+    }
+
+    /* ── Detail view ── */
+    .strategy-detail { display: none; }
+    .strategy-detail.active { display: block; }
+    .strategy-grid-view.hidden { display: none; }
+
+    .detail-back-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--font-mono); font-size: 0.75rem;
+      color: var(--text-muted); cursor: pointer; padding: 8px 0;
+      border: none; background: none; transition: var(--transition);
+    }
+    .detail-back-btn:hover { color: var(--cyan); }
+
+    .detail-header {
+      background: linear-gradient(135deg, rgba(0,212,255,0.05), rgba(0,0,0,0));
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg, 12px); padding: 28px;
+      margin-bottom: 20px;
+    }
+    .detail-title {
+      font-family: var(--font-display); font-size: 1.6rem; font-weight: 900;
+      color: var(--text-primary); letter-spacing: 1px;
+    }
+    .detail-subtitle { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; }
+
+    /* ── Strategy section blocks ── */
+    .strat-section {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 22px; margin-bottom: 16px;
+    }
+    .strat-section-title {
+      font-family: var(--font-display); font-size: 0.85rem; font-weight: 800;
+      color: var(--cyan); letter-spacing: 1px; text-transform: uppercase;
+      padding-bottom: 10px; margin-bottom: 16px;
+      border-bottom: 1px solid rgba(0,212,255,0.2);
+    }
+    .strat-rule {
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-left: 3px solid var(--cyan);
+      border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 10px;
+    }
+    .strat-rule-title { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; color: var(--cyan); margin-bottom: 8px; letter-spacing: 0.5px; }
+    .strat-list { list-style: none; padding: 0; margin: 0; }
+    .strat-list li {
+      font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-secondary);
+      line-height: 1.7; padding: 3px 0 3px 16px; position: relative;
+    }
+    .strat-list li::before { content: '▸'; position: absolute; left: 0; color: var(--cyan); }
+    .strat-highlight {
+      font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-primary);
+      line-height: 1.8;
+    }
+    .strat-highlight strong { color: var(--gold); }
+    .strat-entry-box {
+      background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.2);
+      border-radius: var(--radius-sm); padding: 16px; margin-top: 10px;
+    }
+    .strat-digits-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .strat-digit {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-display); font-size: 0.9rem; font-weight: 800;
+      border: 2px solid; transition: var(--transition);
+    }
+    .strat-digit.odd  { color: var(--gold);  border-color: rgba(245,166,35,0.5); background: rgba(245,166,35,0.1); }
+    .strat-digit.even { color: var(--cyan);  border-color: rgba(0,212,255,0.5);  background: rgba(0,212,255,0.1);  }
+    .strat-digit.over  { color: var(--green); border-color: rgba(0,230,118,0.5);  background: rgba(0,230,118,0.1);  }
+    .strat-digit.under { color: var(--red);   border-color: rgba(255,71,87,0.5);  background: rgba(255,71,87,0.1);  }
+    .strat-digit.neutral { color: var(--text-secondary); border-color: var(--border); background: var(--bg-secondary); }
+
+    .risk-box {
+      background: rgba(255,71,87,0.06); border: 1px solid rgba(255,71,87,0.2);
+      border-radius: var(--radius-sm); padding: 16px;
+    }
+    .risk-box-title { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; color: var(--red); letter-spacing: 1px; margin-bottom: 10px; }
+    .strat-tip-box {
+      background: rgba(245,166,35,0.06); border: 1px solid rgba(245,166,35,0.2);
+      border-radius: var(--radius-sm); padding: 16px;
+    }
+    .strat-tip-box-title { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; color: var(--gold); letter-spacing: 1px; margin-bottom: 10px; }
+
+    /* ── Win rate indicator ── */
+    .win-rate-bar { height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; margin-top: 6px; }
+    .win-rate-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--green), var(--cyan)); transition: width 0.6s ease; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="dashboard.html" class="navbar-brand">
+    <svg width="30" height="30" viewBox="0 0 48 48" fill="none">
+      <polygon points="24,3 45,13.5 45,34.5 24,45 3,34.5 3,13.5" stroke="#00d4ff" stroke-width="1.5" fill="rgba(0,212,255,0.08)"/>
+      <circle cx="24" cy="24" r="5" fill="#00d4ff"/>
+    </svg>
+    <span class="brand-name">ZALO ORACLE PRO</span>
+    <span class="brand-tag">BETA</span>
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="dashboard.html"       class="nav-link">⬛ Home</a></li>
+    <li><a href="bot-settings.html"    class="nav-link">🤖 Bot</a></li>
+    <li><a href="manual-trader.html"   class="nav-link">⚡ Manual</a></li>
+    <li><a href="analysis.html"        class="nav-link">🧠 Analysis</a></li>
+    <li><a href="strategies.html"      class="nav-link active">📊 Strategies</a></li>
+    <li><a href="risk-calculator.html" class="nav-link">🛡️ Risk</a></li>
+  </ul>
+  <div class="navbar-right">
+    <div class="balance-display">
+      <span class="balance-label">Balance</span>
+      <span class="balance-amount" data-balance>-- USD</span>
+    </div>
+    <div class="status-bar">
+      <div id="status-dot"></div>
+      <span id="status-text">Connecting...</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Exit</button>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="page-content">
+
+    <!-- ═══════════════════════════ CARD GRID VIEW ═══════════════════════════ -->
+    <div class="strategy-grid-view" id="strat-grid-view">
+      <div class="flex-between mb-20" style="flex-wrap:wrap;gap:10px;">
+        <div>
+          <h1 style="font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:var(--text-primary);letter-spacing:1px;">Advanced Trading Strategies</h1>
+          <p class="mono text-muted mt-4" style="font-size:0.72rem;">Select a strategy to view detailed execution guidelines and entry conditions.</p>
+        </div>
+        <div class="flex flex-gap-8">
+          <span class="stag stag-green">6 Strategies</span>
+          <span class="stag stag-cyan">Live Conditions</span>
+        </div>
+      </div>
+
+      <div class="strategy-grid" id="strategy-cards"></div>
+    </div>
+
+    <!-- ═══════════════════════════ DETAIL VIEWS ═══════════════════════════ -->
+    <div id="strat-detail-view">
+
+      <!-- ── Even/Odd ── -->
+      <div class="strategy-detail" id="detail-even-odd">
+        <button class="detail-back-btn" onclick="showGrid()">← Back to Strategies</button>
+        <div class="detail-header">
+          <div class="flex flex-gap-12" style="align-items:flex-start;flex-wrap:wrap;">
+            <div style="font-size:2.4rem;">⚖️</div>
+            <div>
+              <div class="detail-title">Even / Odd Strategy</div>
+              <div class="detail-subtitle">Predict whether the final digit of the next tick will be even or odd</div>
+              <div class="flex flex-gap-8 mt-10">
+                <span class="stag stag-green">Beginner Friendly</span>
+                <span class="stag stag-cyan">High Frequency</span>
+                <span class="stag stag-gold">~70% Win Rate</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-16">
+            <div class="mono text-muted mb-6" style="font-size:0.62rem;letter-spacing:1px;">TYPICAL WIN RATE</div>
+            <div class="win-rate-bar"><div class="win-rate-fill" style="width:70%"></div></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <div class="strat-section">
+              <div class="strat-section-title">📌 Core Concept</div>
+              <div class="strat-highlight">
+                Think of it like <strong>balance</strong>.<br/><br/>
+                When many ODD numbers appear, the market prepares to give EVEN.<br/>
+                When many EVEN numbers appear, the market prepares to give ODD.
+              </div>
+            </div>
+
+            <div class="strat-section">
+              <div class="strat-section-title">🎯 ODD Strategy — Entry Points</div>
+              <div class="strat-entry-box">
+                <div class="mono text-gold" style="font-size:0.72rem;font-weight:700;margin-bottom:8px;">ENTRY DIGITS (Odd)</div>
+                <div class="strat-digits-row">
+                  <div class="strat-digit odd">1</div>
+                  <div class="strat-digit odd">3</div>
+                  <div class="strat-digit odd">5</div>
+                  <div class="strat-digit odd">7</div>
+                  <div class="strat-digit odd">9</div>
+                </div>
+              </div>
+              <div class="strat-rule mt-14">
+                <div class="strat-rule-title">CONDITIONS TO ENTER ODD:</div>
+                <ul class="strat-list">
+                  <li>Win rate 70%+</li>
+                  <li>ODD dominates last 20 digits pattern</li>
+                  <li>At least one odd digit is highest (HOT)</li>
+                  <li>At least 2 odd digits have 11%+ occurrence</li>
+                </ul>
+              </div>
+              <div class="strat-entry-box mt-10">
+                <div class="mono text-cyan" style="font-size:0.7rem;font-weight:700;">ENTRY POINT:</div>
+                <div class="mono mt-6" style="font-size:0.72rem;color:var(--text-secondary);line-height:1.7;">
+                  Wait for <strong style="color:var(--cyan);">3+ EVEN digits</strong> in a row,<br/>
+                  then enter immediately after the <strong style="color:var(--gold);">first ODD appears</strong>.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="strat-section">
+              <div class="strat-section-title">🎯 EVEN Strategy — Entry Points</div>
+              <div class="strat-entry-box">
+                <div class="mono text-cyan" style="font-size:0.72rem;font-weight:700;margin-bottom:8px;">ENTRY DIGITS (Even)</div>
+                <div class="strat-digits-row">
+                  <div class="strat-digit even">0</div>
+                  <div class="strat-digit even">2</div>
+                  <div class="strat-digit even">4</div>
+                  <div class="strat-digit even">6</div>
+                  <div class="strat-digit even">8</div>
+                </div>
+              </div>
+              <div class="strat-rule mt-14">
+                <div class="strat-rule-title">CONDITIONS TO ENTER EVEN:</div>
+                <ul class="strat-list">
+                  <li>Win rate 70%+</li>
+                  <li>EVEN dominates last 20 digits pattern</li>
+                  <li>At least one even digit is highest (HOT)</li>
+                  <li>At least 2 even digits have 11%+ occurrence</li>
+                </ul>
+              </div>
+              <div class="strat-entry-box mt-10">
+                <div class="mono text-cyan" style="font-size:0.7rem;font-weight:700;">ENTRY POINT:</div>
+                <div class="mono mt-6" style="font-size:0.72rem;color:var(--text-secondary);line-height:1.7;">
+                  Wait for <strong style="color:var(--gold);">3+ ODD digits</strong> in a row,<br/>
+                  then enter immediately after the <strong style="color:var(--cyan);">first EVEN appears</strong>.
+                </div>
+              </div>
+            </div>
+
+            <div class="risk-box">
+              <div class="risk-box-title">⚠️ RISK MANAGEMENT</div>
+              <ul class="strat-list">
+                <li>Max 3 consecutive trades per session</li>
+                <li>Stop after 2 losses in a row — wait for reset</li>
+                <li>Use fixed stake — never chase losses</li>
+                <li>Don't trade if E/O distribution is exactly 50/50</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Over/Under ── -->
+      <div class="strategy-detail" id="detail-over-under">
+        <button class="detail-back-btn" onclick="showGrid()">← Back to Strategies</button>
+        <div class="detail-header">
+          <div class="flex flex-gap-12" style="align-items:flex-start;flex-wrap:wrap;">
+            <div style="font-size:2.4rem;">📊</div>
+            <div>
+              <div class="detail-title">Over / Under Strategy</div>
+              <div class="detail-subtitle">Predict if the final digit will be above or below your chosen barrier</div>
+              <div class="flex flex-gap-8 mt-10">
+                <span class="stag stag-green">Beginner Friendly</span>
+                <span class="stag stag-cyan">Adjustable Barrier</span>
+                <span class="stag stag-gold">~65-75% Win Rate</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-16">
+            <div class="mono text-muted mb-6" style="font-size:0.62rem;letter-spacing:1px;">TYPICAL WIN RATE</div>
+            <div class="win-rate-bar"><div class="win-rate-fill" style="width:68%"></div></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <div class="strat-section">
+              <div class="strat-section-title">📌 Core Concept</div>
+              <div class="strat-highlight">
+                <strong>OVER</strong> means higher numbers are winning.<br/>
+                <strong>UNDER</strong> means lower numbers are winning.<br/><br/>
+                Wait for the opposite result first, then enter on confirmation.<br/><br/>
+                Think of it like a pendulum — the market swings back.
+              </div>
+            </div>
+
+            <div class="strat-section">
+              <div class="strat-section-title">📈 OVER Entry (Barrier: 5)</div>
+              <div class="strat-entry-box">
+                <div class="mono text-green" style="font-size:0.72rem;font-weight:700;margin-bottom:8px;">TARGET DIGITS (Over 5)</div>
+                <div class="strat-digits-row">
+                  <div class="strat-digit over">6</div>
+                  <div class="strat-digit over">7</div>
+                  <div class="strat-digit over">8</div>
+                  <div class="strat-digit over">9</div>
+                </div>
+              </div>
+              <div class="strat-rule mt-14">
+                <div class="strat-rule-title">CONDITIONS TO ENTER OVER:</div>
+                <ul class="strat-list">
+                  <li>UNDER has been dominant (55%+) in recent ticks</li>
+                  <li>Current under streak ≥ 3</li>
+                  <li>Digits 6-9 are not all cold simultaneously</li>
+                  <li>Distribution shows reversion potential</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="strat-section">
+              <div class="strat-section-title">📉 UNDER Entry (Barrier: 5)</div>
+              <div class="strat-entry-box">
+                <div class="mono text-red" style="font-size:0.72rem;font-weight:700;margin-bottom:8px;">TARGET DIGITS (Under 5)</div>
+                <div class="strat-digits-row">
+                  <div class="strat-digit under">0</div>
+                  <div class="strat-digit under">1</div>
+                  <div class="strat-digit under">2</div>
+                  <div class="strat-digit under">3</div>
+                  <div class="strat-digit under">4</div>
+                </div>
+              </div>
+              <div class="strat-rule mt-14">
+                <div class="strat-rule-title">CONDITIONS TO ENTER UNDER:</div>
+                <ul class="strat-list">
+                  <li>OVER has been dominant (55%+) in recent ticks</li>
+                  <li>Current over streak ≥ 3</li>
+                  <li>Digits 0-4 are not all cold simultaneously</li>
+                  <li>Distribution shows downward reversion</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="risk-box">
+              <div class="risk-box-title">⚠️ RISK MANAGEMENT</div>
+              <ul class="strat-list">
+                <li>Barrier 5 is default — adjust based on market</li>
+                <li>Avoid trading when match% is very high (>15%)</li>
+                <li>Max 3 trades per market session</li>
+                <li>Exit if two consecutive losses occur</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Hit and Run ── -->
+      <div class="strategy-detail" id="detail-hit-and-run">
+        <button class="detail-back-btn" onclick="showGrid()">← Back to Strategies</button>
+        <div class="detail-header">
+          <div class="flex flex-gap-12" style="align-items:flex-start;flex-wrap:wrap;">
+            <div style="font-size:2.4rem;">⚡</div>
+            <div>
+              <div class="detail-title">Hit and Run — Over/Under</div>
+              <div class="detail-subtitle">Quick entry/exit using statistical digit analysis and 3-tick synchronization</div>
+              <div class="flex flex-gap-8 mt-10">
+                <span class="stag stag-red">Advanced</span>
+                <span class="stag stag-cyan">Tick Sync</span>
+                <span class="stag stag-gold">High Precision</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-16">
+            <div class="mono text-muted mb-6" style="font-size:0.62rem;letter-spacing:1px;">TYPICAL WIN RATE</div>
+            <div class="win-rate-bar"><div class="win-rate-fill" style="width:78%"></div></div>
+          </div>
+        </div>
+
+        <div class="strat-section">
+          <div class="strat-section-title">📌 Introduction</div>
+          <div class="strat-highlight">
+            The Hit and Run strategy leverages <strong>statistical digit occurrence analysis</strong> to determine high-probability entry points.<br/><br/>
+            The goal is to execute trades quickly based on specific conditions, ensuring <strong>minimal exposure</strong> while maximizing accuracy.<br/><br/>
+            The strategy focuses on two key trade types: <strong>Trading Over 1</strong> and <strong>Trading Under 8</strong>.
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <div class="strat-section">
+              <div class="strat-section-title">📈 Prediction: Over 1</div>
+              <div class="strat-entry-box">
+                <div class="mono text-green" style="font-size:0.72rem;font-weight:700;margin-bottom:6px;">Entry Digits: 5 or 9</div>
+                <div class="mono" style="font-size:0.7rem;color:var(--text-secondary);line-height:1.7;">
+                  If either digit appears, check next 3-tick sequence.<br/>
+                  If confirmed → pick number and execute.
+                </div>
+              </div>
+              <div class="strat-rule mt-12">
+                <div class="strat-rule-title">1. FOLLOW THE TREND:</div>
+                <ul class="strat-list">
+                  <li>Ensure the market is in an uptrend</li>
+                  <li>Look for increasing bullish momentum in price</li>
+                </ul>
+              </div>
+              <div class="strat-rule">
+                <div class="strat-rule-title">2. DIGIT OCCURRENCE FILTER:</div>
+                <ul class="strat-list">
+                  <li>Digits 0 and 1 must have occurrence less than 10%</li>
+                  <li>Digit 5 or 9 must appear as entry signal</li>
+                </ul>
+              </div>
+              <div class="strat-entry-box">
+                <div class="strat-digits-row">
+                  <div class="strat-digit neutral">0<sub style="font-size:0.4rem;">&lt;10%</sub></div>
+                  <div class="strat-digit neutral">1<sub style="font-size:0.4rem;">&lt;10%</sub></div>
+                  <div class="strat-digit over">5</div>
+                  <div class="strat-digit over">9</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="strat-section">
+              <div class="strat-section-title">📉 Prediction: Under 8</div>
+              <div class="strat-entry-box">
+                <div class="mono text-red" style="font-size:0.72rem;font-weight:700;margin-bottom:6px;">Entry Digits: 0, 4, or 9</div>
+                <div class="mono" style="font-size:0.7rem;color:var(--text-secondary);line-height:1.7;">
+                  If any digit appears, check next 3-tick sequence.<br/>
+                  If confirmed → pick number and execute.
+                </div>
+              </div>
+              <div class="strat-rule mt-12">
+                <div class="strat-rule-title">1. FOLLOW THE TREND:</div>
+                <ul class="strat-list">
+                  <li>Ensure the market is in a downtrend</li>
+                  <li>Look for increasing bearish momentum in price</li>
+                </ul>
+              </div>
+              <div class="strat-rule">
+                <div class="strat-rule-title">2. DIGIT OCCURRENCE FILTER:</div>
+                <ul class="strat-list">
+                  <li>Digits 9 and 8 must have occurrence less than 10%</li>
+                  <li>Digit 0, 4, or 9 must appear as entry signal</li>
+                </ul>
+              </div>
+              <div class="strat-entry-box">
+                <div class="strat-digits-row">
+                  <div class="strat-digit under">0</div>
+                  <div class="strat-digit under">4</div>
+                  <div class="strat-digit neutral">8<sub style="font-size:0.4rem;">&lt;10%</sub></div>
+                  <div class="strat-digit neutral">9<sub style="font-size:0.4rem;">&lt;10%</sub></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="risk-box">
+              <div class="risk-box-title">⚠️ TRADING RULES — HIT AND RUN</div>
+              <ul class="strat-list">
+                <li>Execute trade per validated entry criteria</li>
+                <li>Win → immediately exit and wait for next valid signal</li>
+                <li>Increase stake progressively after wins</li>
+                <li>Stake Allocation: controlled plan to prevent excessive losses</li>
+                <li>Max Consecutive Trades: limit to 3 per interval</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Matches/Differs ── -->
+      <div class="strategy-detail" id="detail-matches-differs">
+        <button class="detail-back-btn" onclick="showGrid()">← Back to Strategies</button>
+        <div class="detail-header">
+          <div class="flex flex-gap-12" style="align-items:flex-start;flex-wrap:wrap;">
+            <div style="font-size:2.4rem;">🔢</div>
+            <div>
+              <div class="detail-title">Matches / Differs Strategy</div>
+              <div class="detail-subtitle">Predict whether the final digit will match or differ from your chosen digit</div>
+              <div class="flex flex-gap-8 mt-10">
+                <span class="stag stag-green">Intermediate</span>
+                <span class="stag stag-cyan">Cold Digit Focus</span>
+                <span class="stag stag-gold">~90% Differs Win Rate</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-16">
+            <div class="mono text-muted mb-6" style="font-size:0.62rem;letter-spacing:1px;">TYPICAL WIN RATE (DIFFERS)</div>
+            <div class="win-rate-bar"><div class="win-rate-fill" style="width:88%"></div></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <div class="strat-section">
+              <div class="strat-section-title">📌 Core Concept</div>
+              <div class="strat-highlight">
+                Each digit has approximately <strong>10% probability</strong> of appearing.<br/><br/>
+                <strong>Differs</strong> wins when the chosen digit does NOT appear — which is 90% of the time for any specific digit.<br/><br/>
+                <strong>Matches</strong> wins when the chosen digit DOES appear — best used on COLD (underperforming) digits awaiting reversion.
+              </div>
+            </div>
+
+            <div class="strat-section">
+              <div class="strat-section-title">🎯 DIFFERS Strategy</div>
+              <div class="strat-rule">
+                <div class="strat-rule-title">BEST APPROACH:</div>
+                <ul class="strat-list">
+                  <li>Select the HOT digit (highest occurrence)</li>
+                  <li>Bet DIFFERS on it — even hot digits miss 85%+ of the time</li>
+                  <li>HOT digit at 15%+ occurrence = strong DIFFERS signal</li>
+                </ul>
+              </div>
+              <div class="strat-tip-box mt-10">
+                <div class="strat-tip-box-title">💡 PRO TIP</div>
+                <div class="mono" style="font-size:0.7rem;color:var(--text-secondary);line-height:1.7;">
+                  Use the Matches/Differs sub-page in Analysis to check live percentages. HOT digit at 15-20% = prime DIFFERS entry.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="strat-section">
+              <div class="strat-section-title">🎯 MATCHES Strategy</div>
+              <div class="strat-rule">
+                <div class="strat-rule-title">BEST APPROACH:</div>
+                <ul class="strat-list">
+                  <li>Select the COLD digit (lowest occurrence)</li>
+                  <li>Cold digit below 5% = overdue for appearance</li>
+                  <li>Wait for cold digit to go 50+ ticks without appearing</li>
+                  <li>Bet MATCHES — statistical reversion expected</li>
+                </ul>
+              </div>
+              <div class="strat-tip-box mt-10">
+                <div class="strat-tip-box-title">💡 PRO TIP</div>
+                <div class="mono" style="font-size:0.7rem;color:var(--text-secondary);line-height:1.7;">
+                  Cold digit at 3-5% in 100+ ticks = very strong reversion signal. This is a low-frequency but high-confidence trade.
+                </div>
+              </div>
+            </div>
+
+            <div class="risk-box">
+              <div class="risk-box-title">⚠️ RISK MANAGEMENT</div>
+              <ul class="strat-list">
+                <li>For Differs: fixed stake, trade frequently</li>
+                <li>For Matches: higher stake, low frequency</li>
+                <li>Never bet Matches on a digit that just appeared</li>
+                <li>Max 5 consecutive Differs trades on same digit</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Rise/Fall ── -->
+      <div class="strategy-detail" id="detail-rise-fall">
+        <button class="detail-back-btn" onclick="showGrid()">← Back to Strategies</button>
+        <div class="detail-header">
+          <div class="flex flex-gap-12" style="align-items:flex-start;flex-wrap:wrap;">
+            <div style="font-size:2.4rem;">📈</div>
+            <div>
+              <div class="detail-title">Rise / Fall Strategy</div>
+              <div class="detail-subtitle">Predict the directional momentum of price movement</div>
+              <div class="flex flex-gap-8 mt-10">
+                <span class="stag stag-green">Beginner Friendly</span>
+                <span class="stag stag-cyan">Momentum Based</span>
+                <span class="stag stag-gold">~60% Win Rate</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-16">
+            <div class="mono text-muted mb-6" style="font-size:0.62rem;letter-spacing:1px;">TYPICAL WIN RATE</div>
+            <div class="win-rate-bar"><div class="win-rate-fill" style="width:60%"></div></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <div class="strat-section">
+              <div class="strat-section-title">📌 Core Concept</div>
+              <div class="strat-highlight">
+                Markets tend to <strong>revert</strong> after extended runs.<br/><br/>
+                If the price has been rising for many consecutive ticks — a fall is statistically more likely.<br/>
+                If the price has been falling for many consecutive ticks — a rise is statistically more likely.
+              </div>
+            </div>
+
+            <div class="strat-section">
+              <div class="strat-section-title">📈 BET RISE — Entry Conditions</div>
+              <div class="strat-rule">
+                <div class="strat-rule-title">CONDITIONS:</div>
+                <ul class="strat-list">
+                  <li>3 or more consecutive falls in last 5 ticks</li>
+                  <li>Overall fall% is ≥ 55% in the window</li>
+                  <li>Price is NOT in a strong consistent downtrend</li>
+                </ul>
+              </div>
+              <div class="strat-entry-box">
+                <div class="mono text-green" style="font-size:0.7rem;line-height:1.7;">
+                  Wait for: <strong style="color:var(--green);">3+ consecutive FALLS</strong><br/>
+                  Then enter: <strong>BET RISE</strong> on next tick
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="strat-section">
+              <div class="strat-section-title">📉 BET FALL — Entry Conditions</div>
+              <div class="strat-rule">
+                <div class="strat-rule-title">CONDITIONS:</div>
+                <ul class="strat-list">
+                  <li>3 or more consecutive rises in last 5 ticks</li>
+                  <li>Overall rise% is ≥ 55% in the window</li>
+                  <li>Price is NOT in a strong consistent uptrend</li>
+                </ul>
+              </div>
+              <div class="strat-entry-box">
+                <div class="mono text-red" style="font-size:0.7rem;line-height:1.7;">
+                  Wait for: <strong style="color:var(--red);">3+ consecutive RISES</strong><br/>
+                  Then enter: <strong>BET FALL</strong> on next tick
+                </div>
+              </div>
+            </div>
+
+            <div class="risk-box">
+              <div class="risk-box-title">⚠️ RISK MANAGEMENT</div>
+              <ul class="strat-list">
+                <li>Use the Chart sub-page to confirm direction visually</li>
+                <li>Don't trade in sideways/choppy markets</li>
+                <li>Max 3 trades then pause and reassess</li>
+                <li>Rise/Fall has lower edge — use with other confirmations</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Martingale ── -->
+      <div class="strategy-detail" id="detail-martingale">
+        <button class="detail-back-btn" onclick="showGrid()">← Back to Strategies</button>
+        <div class="detail-header">
+          <div class="flex flex-gap-12" style="align-items:flex-start;flex-wrap:wrap;">
+            <div style="font-size:2.4rem;">💰</div>
+            <div>
+              <div class="detail-title">Controlled Martingale</div>
+              <div class="detail-subtitle">Progressive stake recovery system with strict loss limits</div>
+              <div class="flex flex-gap-8 mt-10">
+                <span class="stag stag-red">Advanced</span>
+                <span class="stag stag-red">High Risk</span>
+                <span class="stag stag-gold">Requires Discipline</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="strat-section" style="border-color:rgba(255,71,87,0.3);background:rgba(255,71,87,0.04);">
+          <div class="strat-section-title" style="color:var(--red);">⚠️ HIGH RISK WARNING</div>
+          <div class="strat-highlight">
+            Martingale can <strong style="color:var(--red);">wipe your account</strong> if used without strict rules.<br/>
+            Only use this with a clear loss limit. <strong>Never exceed 4-5 steps.</strong>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <div class="strat-section">
+              <div class="strat-section-title">📌 How It Works</div>
+              <div class="strat-highlight">
+                Start with a base stake. After each loss, <strong>double the stake</strong> to recover losses + small profit on next win.<br/><br/>
+                <strong>Example (base $0.35):</strong>
+              </div>
+              <div class="strat-entry-box mt-10" style="font-family:var(--font-mono);font-size:0.72rem;line-height:2;">
+                Step 1: <strong style="color:var(--cyan);">$0.35</strong> — lose<br/>
+                Step 2: <strong style="color:var(--cyan);">$0.76</strong> — lose<br/>
+                Step 3: <strong style="color:var(--cyan);">$1.64</strong> — lose<br/>
+                Step 4: <strong style="color:var(--gold);">$3.55</strong> — <strong style="color:var(--green);">WIN → recover all</strong>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="strat-section">
+              <div class="strat-section-title">📋 Zalo Rules</div>
+              <ul class="strat-list">
+                <li>Use only with Even/Odd or Over/Under strategies</li>
+                <li>Hard stop at 4 steps maximum</li>
+                <li>Never start martingale after 3 wins — pause first</li>
+                <li>Use the Risk Calculator to pre-plan step amounts</li>
+                <li>Your bankroll must cover all 4 steps before starting</li>
+                <li>Reset to base stake after every win</li>
+              </ul>
+              <div class="strat-tip-box mt-12">
+                <div class="strat-tip-box-title">💡 ZALO TIP</div>
+                <div class="mono" style="font-size:0.7rem;color:var(--text-secondary);line-height:1.7;">
+                  With your $10 account, base stake of $0.35 gives you 4 clean martingale steps before risk becomes account-threatening. Keep this ratio.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Compound Growth ── -->
+      <div class="strategy-detail" id="detail-compound">
+        <button class="detail-back-btn" onclick="showGrid()">← Back to Strategies</button>
+        <div class="detail-header">
+          <div class="flex flex-gap-12" style="align-items:flex-start;flex-wrap:wrap;">
+            <div style="font-size:2.4rem;">🌱</div>
+            <div>
+              <div class="detail-title">Compound Growth Plan</div>
+              <div class="detail-subtitle">Systematic account building through disciplined reinvestment</div>
+              <div class="flex flex-gap-8 mt-10">
+                <span class="stag stag-green">All Levels</span>
+                <span class="stag stag-cyan">Long Term</span>
+                <span class="stag stag-gold">Patience Required</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <div class="strat-section">
+              <div class="strat-section-title">📌 The $5 Compound Plan</div>
+              <div class="strat-highlight">
+                Start with <strong>$5</strong>. Target <strong>5-10% daily profit</strong>.<br/>
+                Reinvest everything. Let compound interest do the work.
+              </div>
+              <div class="strat-entry-box mt-14" style="font-family:var(--font-mono);font-size:0.7rem;line-height:2.2;">
+                <strong style="color:var(--text-muted);">Day 1:</strong> $5.00 → <strong style="color:var(--green);">$5.50</strong><br/>
+                <strong style="color:var(--text-muted);">Day 7:</strong> $5.50 → <strong style="color:var(--green);">~$7.18</strong><br/>
+                <strong style="color:var(--text-muted);">Day 30:</strong> → <strong style="color:var(--gold);">~$87.00</strong><br/>
+                <strong style="color:var(--text-muted);">Day 60:</strong> → <strong style="color:var(--cyan);">~$1,500+</strong>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="strat-section">
+              <div class="strat-section-title">📋 Daily Rules</div>
+              <ul class="strat-list">
+                <li>Set a daily profit TARGET (e.g. 10%) and STOP when hit</li>
+                <li>Set a daily LOSS LIMIT (e.g. 20% of balance) — stop when hit</li>
+                <li>Stake 3-5% of current balance per trade</li>
+                <li>Never trade when emotional or tired</li>
+                <li>Track every trade in the Report section</li>
+              </ul>
+              <div class="strat-tip-box mt-12">
+                <div class="strat-tip-box-title">💡 ZALO TIP</div>
+                <div class="mono" style="font-size:0.7rem;color:var(--text-secondary);line-height:1.7;">
+                  The goal isn't profit today. The goal is <strong style="color:var(--gold);">surviving long enough</strong> for compound to kick in. 30 winning days beats 1 big win that gets gambled away.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /strat-detail-view -->
+  </div>
+</div>
+
+<script src="js/utils.js"></script>
+<script src="js/deriv-api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  Auth.autoLogin();
+
+  // Strategy card definitions
+  const strategies = [
+    {
+      id: 'even-odd',
+      icon: '⚖️',
+      title: 'Even / Odd',
+      desc: 'Predict whether the final digit will be even or odd. Uses parity reversion theory — bet opposite of dominant pattern.',
+      tags: [['Beginner','stag-green'],['High Frequency','stag-cyan'],['~70% Win Rate','stag-gold']],
+      accent: 'var(--cyan)',
+      iconBg: 'rgba(0,212,255,0.12)',
+      iconBorder: 'rgba(0,212,255,0.3)',
+      difficulty: 'BEGINNER',
+      diffColor: 'rgba(0,230,118,0.2)',
+      diffTextColor: 'var(--green)',
+    },
+    {
+      id: 'over-under',
+      icon: '📊',
+      title: 'Over / Under',
+      desc: 'Predict if the final digit will be above or below your chosen barrier (0-9). Adjustable barrier for all market conditions.',
+      tags: [['Beginner','stag-green'],['Flexible Barrier','stag-cyan'],['~68% Win Rate','stag-gold']],
+      accent: 'var(--green)',
+      iconBg: 'rgba(0,230,118,0.12)',
+      iconBorder: 'rgba(0,230,118,0.3)',
+      difficulty: 'BEGINNER',
+      diffColor: 'rgba(0,230,118,0.2)',
+      diffTextColor: 'var(--green)',
+    },
+    {
+      id: 'hit-and-run',
+      icon: '⚡',
+      title: 'Hit and Run',
+      desc: 'Advanced Over/Under strategy using 3-tick synchronization and digit occurrence filters for precision entries.',
+      tags: [['Advanced','stag-red'],['Tick Sync','stag-cyan'],['High Precision','stag-gold']],
+      accent: 'var(--gold)',
+      iconBg: 'rgba(245,166,35,0.12)',
+      iconBorder: 'rgba(245,166,35,0.3)',
+      difficulty: 'ADVANCED',
+      diffColor: 'rgba(255,71,87,0.2)',
+      diffTextColor: 'var(--red)',
+    },
+    {
+      id: 'matches-differs',
+      icon: '🔢',
+      title: 'Matches / Differs',
+      desc: 'Bet that a specific digit will or won\'t appear. Differs strategy wins ~90% of the time on any single digit.',
+      tags: [['Intermediate','stag-gold'],['Cold Digit Focus','stag-cyan'],['~90% Differs Rate','stag-green']],
+      accent: 'var(--red)',
+      iconBg: 'rgba(255,71,87,0.12)',
+      iconBorder: 'rgba(255,71,87,0.3)',
+      difficulty: 'INTERMEDIATE',
+      diffColor: 'rgba(245,166,35,0.2)',
+      diffTextColor: 'var(--gold)',
+    },
+    {
+      id: 'rise-fall',
+      icon: '📈',
+      title: 'Rise / Fall',
+      desc: 'Predict directional price movement. Uses momentum reversion — bet opposite of recent consecutive price direction.',
+      tags: [['Beginner','stag-green'],['Momentum','stag-cyan'],['~60% Win Rate','stag-gold']],
+      accent: '#a78bfa',
+      iconBg: 'rgba(167,139,250,0.12)',
+      iconBorder: 'rgba(167,139,250,0.3)',
+      difficulty: 'BEGINNER',
+      diffColor: 'rgba(0,230,118,0.2)',
+      diffTextColor: 'var(--green)',
+    },
+    {
+      id: 'martingale',
+      icon: '💰',
+      title: 'Controlled Martingale',
+      desc: 'Progressive stake doubling for loss recovery. Powerful but dangerous — strictly limited to 4 steps maximum.',
+      tags: [['Advanced','stag-red'],['High Risk','stag-red'],['Recovery System','stag-gold']],
+      accent: 'var(--red)',
+      iconBg: 'rgba(255,71,87,0.08)',
+      iconBorder: 'rgba(255,71,87,0.3)',
+      difficulty: 'ADVANCED',
+      diffColor: 'rgba(255,71,87,0.2)',
+      diffTextColor: 'var(--red)',
+    },
+    {
+      id: 'compound',
+      icon: '🌱',
+      title: 'Compound Growth Plan',
+      desc: 'Systematic account building through daily targets and disciplined reinvestment. The $5 → $1000+ roadmap.',
+      tags: [['All Levels','stag-green'],['Long Term','stag-cyan'],['Patience Required','stag-gold']],
+      accent: 'var(--green)',
+      iconBg: 'rgba(0,230,118,0.12)',
+      iconBorder: 'rgba(0,230,118,0.3)',
+      difficulty: 'ALL LEVELS',
+      diffColor: 'rgba(0,212,255,0.2)',
+      diffTextColor: 'var(--cyan)',
+    },
+  ];
+
+  const grid = document.getElementById('strategy-cards');
+  grid.innerHTML = strategies.map(s => `
+    <div class="strategy-card" style="--card-accent:${s.accent};--icon-bg:${s.iconBg};--icon-border:${s.iconBorder};"
+         onclick="showDetail('${s.id}')">
+      <div class="diff-badge" style="background:${s.diffColor};color:${s.diffTextColor};">${s.difficulty}</div>
+      <div class="strategy-card-icon">${s.icon}</div>
+      <div class="strategy-card-title">${s.title}</div>
+      <div class="strategy-card-desc">${s.desc}</div>
+      <div class="strategy-card-tags">${s.tags.map(([t,c]) => `<span class="stag ${c}">${t}</span>`).join('')}</div>
+      <button class="explore-btn">Explore Strategy →</button>
+    </div>`).join('');
+
+  window.showDetail = (id) => {
+    document.getElementById('strat-grid-view').classList.add('hidden');
+    document.querySelectorAll('.strategy-detail').forEach(d => d.classList.remove('active'));
+    const det = document.getElementById('detail-' + id);
+    if (det) det.classList.add('active');
+    window.scrollTo(0, 0);
+  };
+
+  window.showGrid = () => {
+    document.getElementById('strat-grid-view').classList.remove('hidden');
+    document.querySelectorAll('.strategy-detail').forEach(d => d.classList.remove('active'));
+    window.scrollTo(0, 0);
+  };
+});
+</script>
+</body>
+</html>

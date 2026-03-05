@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zalo Oracle Pro — Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@300;400;500;600&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/login.css"/>
+</head>
+<body class="login-body">
+
+  <div class="bg-grid"></div>
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <div class="login-wrapper">
+
+    <!-- ── LEFT ──────────────────────────────────────────────────────────── -->
+    <div class="login-left fade-in">
+      <div class="brand-block">
+        <div class="brand-icon">
+          <svg width="52" height="52" viewBox="0 0 48 48" fill="none">
+            <polygon points="24,4 44,14 44,34 24,44 4,34 4,14" stroke="#00d4ff" stroke-width="1.5" fill="rgba(0,212,255,0.08)"/>
+            <polygon points="24,12 36,18 36,30 24,36 12,30 12,18" stroke="#f5a623" stroke-width="1" fill="rgba(245,166,35,0.06)"/>
+            <circle cx="24" cy="24" r="5" fill="#00d4ff"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">ZALO ORACLE PRO</div>
+          <div class="brand-tagline">Powered by Deriv API</div>
+        </div>
+      </div>
+
+      <div class="feature-list">
+        <div class="feature-item">
+          <span class="feature-icon">⚡</span>
+          <div><div class="feature-title">Live Tick Streaming</div><div class="feature-desc">Real-time prices from 19+ markets via WebSocket</div></div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">🧠</span>
+          <div><div class="feature-title">Smart Analysis Engine</div><div class="feature-desc">Digit stats, Even/Odd, Over/Under across 1000 ticks</div></div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">🤖</span>
+          <div><div class="feature-title">Automated Bot Trading</div><div class="feature-desc">Martingale, Take Profit, Stop Loss — fully automated</div></div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">🛡️</span>
+          <div><div class="feature-title">Risk Management</div><div class="feature-desc">Capital buffer calculator and live P&amp;L tracking</div></div>
+        </div>
+      </div>
+
+      <div class="risk-warning">
+        <span class="risk-icon">⚠</span>
+        <span>Trading involves risk. Only trade with capital you can afford to lose.</span>
+      </div>
+    </div>
+
+    <!-- ── RIGHT ─────────────────────────────────────────────────────────── -->
+    <div class="login-right fade-in" style="animation-delay:0.15s">
+      <div class="login-card">
+
+        <div class="login-header">
+          <h2 class="login-title">Connect Account</h2>
+          <p class="login-subtitle">Enter your Deriv API token to continue</p>
+        </div>
+
+        <!-- How to get token -->
+        <div class="token-guide mt-16">
+          <div class="guide-title">📋 How to get your API token</div>
+          <div class="guide-steps">
+            <div class="guide-step">
+              <span class="step-num">1</span>
+              <span>Go to <a href="https://app.deriv.com/account/api-token" target="_blank" class="text-cyan">app.deriv.com/account/api-token</a></span>
+            </div>
+            <div class="guide-step">
+              <span class="step-num">2</span>
+              <span>Create token with <strong>Read</strong> + <strong>Trade</strong> scopes</span>
+            </div>
+            <div class="guide-step">
+              <span class="step-num">3</span>
+              <span>Copy and paste it below</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Token input -->
+        <div class="form-group mt-16">
+          <label class="form-label">API Token</label>
+          <div class="token-input-wrap">
+            <input
+              type="password"
+              class="form-input"
+              id="api-token-input"
+              placeholder="Paste your Deriv API token here..."
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button class="token-eye-btn" id="toggle-visibility" title="Show/hide token">
+              <span id="eye-icon">👁</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Remember token -->
+        <label class="remember-label mt-8">
+          <input type="checkbox" id="remember-token" checked/>
+          <span>Remember token on this device</span>
+        </label>
+
+        <!-- Error -->
+        <div id="login-error" class="login-error" style="display:none;"></div>
+
+        <!-- Connect Button -->
+        <button class="btn btn-primary btn-full btn-lg mt-20" id="login-btn">
+          🔐 Connect Account
+        </button>
+
+        <div class="divider mt-20"></div>
+
+        <!-- Status + Deriv badge -->
+        <div class="deriv-branding-row">
+          <div class="status-bar">
+            <div id="status-dot"></div>
+            <span id="status-text">Not Connected</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="mono text-muted" style="font-size:0.7rem;">Powered by</span>
+            <span style="font-family:var(--font-display);font-size:0.85rem;font-weight:700;color:#ff444f;letter-spacing:1px;">deriv</span>
+          </div>
+        </div>
+
+        <div class="text-center mt-12">
+          <span class="mono text-muted" style="font-size:0.72rem;">
+            No account? <a href="https://deriv.com/signup/" target="_blank" class="text-cyan">Sign up free →</a>
+          </span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/deriv-api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+
+    // Already logged in — skip to dashboard
+    if (Auth.hasSession()) {
+      window.location.href = 'dashboard.html';
+      return;
+    }
+
+    // Token visibility toggle
+    const tokenInput = document.getElementById('api-token-input');
+    document.getElementById('toggle-visibility').addEventListener('click', () => {
+      const isHidden = tokenInput.type === 'password';
+      tokenInput.type = isHidden ? 'text' : 'password';
+      document.getElementById('eye-icon').textContent = isHidden ? '🙈' : '👁';
+    });
+
+    // Enter key triggers login
+    tokenInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') Auth.login();
+    });
+
+    // Connect button
+    document.getElementById('login-btn').addEventListener('click', Auth.login);
+
+  });
+  </script>
+
+</body>
+</html>

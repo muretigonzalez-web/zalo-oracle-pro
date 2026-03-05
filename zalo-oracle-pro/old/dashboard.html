@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zalo Oracle Pro — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@300;400;500;600&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+</head>
+<body>
+
+<!-- ── NAVBAR ──────────────────────────────────────────────────────────────── -->
+<nav class="navbar">
+  <a href="dashboard.html" class="navbar-brand">
+    <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+      <polygon points="24,4 44,14 44,34 24,44 4,34 4,14" stroke="#00d4ff" stroke-width="1.5" fill="rgba(0,212,255,0.08)"/>
+      <circle cx="24" cy="24" r="5" fill="#00d4ff"/>
+    </svg>
+    <span class="brand-name">ZALO ORACLE PRO</span>
+    <span class="brand-tag">BETA</span>
+  </a>
+
+  <ul class="navbar-nav">
+    <li><a href="dashboard.html"     class="nav-link active">⬛ Home</a></li>
+    <li><a href="bot-settings.html"  class="nav-link">🤖 Bot Settings</a></li>
+    <li><a href="manual-trader.html" class="nav-link">⚡ Manual Trade</a></li>
+    <li><a href="analysis.html"      class="nav-link">🧠 Analysis</a></li>
+    <li><a href="strategies.html"    class="nav-link">📊 Strategies</a></li>
+    <li><a href="risk-calculator.html" class="nav-link">🛡️ Risk Calc</a></li>
+  </ul>
+
+  <div class="navbar-right">
+    <!-- Balance -->
+    <div class="balance-display">
+      <span class="balance-label">Balance</span>
+      <span class="balance-amount" data-balance>-- USD</span>
+    </div>
+    <!-- Status -->
+    <div class="status-bar">
+      <div id="status-dot"></div>
+      <span id="status-text">Connecting...</span>
+    </div>
+    <!-- Run Button -->
+    <button class="btn-run" id="run-btn">
+      <span id="run-icon">▶</span>
+      <span id="run-text">RUN</span>
+    </button>
+    <!-- Logout -->
+    <button class="btn btn-ghost btn-sm" id="logout-btn">Exit</button>
+  </div>
+</nav>
+
+<!-- ── PAGE WRAPPER ─────────────────────────────────────────────────────────── -->
+<div class="page-wrapper">
+  <div class="page-content">
+
+    <!-- ── TOP ROW: Market Selector + Live Price ──────────────────────────── -->
+    <div class="top-row">
+
+      <!-- Market Selector -->
+      <div class="market-selector-wrap card">
+        <div class="card-header">
+          <span class="card-title">📈 Market</span>
+          <span class="badge badge-cyan" id="market-badge">LIVE</span>
+        </div>
+        <select class="form-select" id="market-select">
+          <optgroup label="Volatility (1s)">
+            <option value="1HZ10V">Volatility 10 (1s) Index</option>
+            <option value="1HZ25V">Volatility 25 (1s) Index</option>
+            <option value="1HZ50V">Volatility 50 (1s) Index</option>
+            <option value="1HZ75V">Volatility 75 (1s) Index</option>
+            <option value="1HZ100V">Volatility 100 (1s) Index</option>
+          </optgroup>
+          <optgroup label="Volatility">
+            <option value="R_10">Volatility 10 Index</option>
+            <option value="R_25">Volatility 25 Index</option>
+            <option value="R_50">Volatility 50 Index</option>
+            <option value="R_75">Volatility 75 Index</option>
+            <option value="R_100">Volatility 100 Index</option>
+          </optgroup>
+          <optgroup label="Boom & Crash">
+            <option value="BOOM300N">Boom 300 Index</option>
+            <option value="BOOM500">Boom 500 Index</option>
+            <option value="BOOM1000">Boom 1000 Index</option>
+            <option value="CRASH300N">Crash 300 Index</option>
+            <option value="CRASH500">Crash 500 Index</option>
+            <option value="CRASH1000">Crash 1000 Index</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="stpRNG">Step Index</option>
+            <option value="RNGBRNK100">Range Break 100</option>
+            <option value="RNGBRNK200">Range Break 200</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <!-- Live Price Card -->
+      <div class="live-price-card card card-cyan">
+        <div class="card-header">
+          <span class="card-title">💹 Live Price</span>
+          <span class="live-dot glow-anim">●</span>
+        </div>
+        <div class="price-display" data-price id="live-price">---.--</div>
+        <div class="price-meta flex-between mt-8">
+          <span class="mono text-muted">Last Digit: <strong class="text-cyan" data-last-digit id="last-digit">-</strong></span>
+          <span class="mono text-muted">Parity: <strong id="parity-display" data-parity>-</strong></span>
+          <span class="mono text-muted" id="tick-count">Ticks: 0</span>
+        </div>
+      </div>
+
+      <!-- Account Info Card -->
+      <div class="account-card card">
+        <div class="card-header">
+          <span class="card-title">👤 Account</span>
+        </div>
+        <div class="account-grid">
+          <div class="account-row">
+            <span class="mono text-muted">Login ID</span>
+            <span class="mono text-cyan" data-loginid>--</span>
+          </div>
+          <div class="account-row">
+            <span class="mono text-muted">Currency</span>
+            <span class="mono text-gold" data-currency>--</span>
+          </div>
+          <div class="account-row">
+            <span class="mono text-muted">Balance</span>
+            <span class="mono text-green" data-balance>--</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── DIGIT MONITOR ROW ───────────────────────────────────────────────── -->
+    <div class="card mt-16">
+      <div class="card-header">
+        <span class="card-title">🎯 Live Digit Monitor</span>
+        <div class="flex flex-gap-8">
+          <select class="form-select" id="digit-count-select" style="width:auto;padding:4px 28px 4px 10px;font-size:0.78rem;">
+            <option value="50">Last 50</option>
+            <option value="100" selected>Last 100</option>
+            <option value="200">Last 200</option>
+            <option value="500">Last 500</option>
+          </select>
+        </div>
+      </div>
+      <!-- Digit Circles 0-9 -->
+      <div class="digit-circles" id="digit-circles">
+        <!-- Generated by JS -->
+      </div>
+      <!-- Parity Row -->
+      <div class="parity-section mt-16">
+        <div class="flex-between mb-8">
+          <span class="mono text-muted" style="font-size:0.75rem;">LAST 20 DIGITS</span>
+          <div class="flex flex-gap-8">
+            <span class="badge badge-cyan">Even <span id="even-pct">0%</span></span>
+            <span class="badge badge-gold">Odd <span id="odd-pct">0%</span></span>
+          </div>
+        </div>
+        <div class="parity-row" id="parity-row">
+          <!-- Generated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STATS + TERMINAL ROW ───────────────────────────────────────────── -->
+    <div class="grid-2 mt-16">
+
+      <!-- Over/Under Stats -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📊 Over / Under Stats</span>
+          <select class="form-select" id="ou-barrier-select" style="width:auto;padding:4px 28px 4px 10px;font-size:0.78rem;">
+            <option value="1">Barrier 1</option>
+            <option value="2">Barrier 2</option>
+            <option value="3">Barrier 3</option>
+            <option value="4">Barrier 4</option>
+            <option value="5" selected>Barrier 5</option>
+            <option value="6">Barrier 6</option>
+            <option value="7">Barrier 7</option>
+            <option value="8">Barrier 8</option>
+            <option value="9">Barrier 9</option>
+          </select>
+        </div>
+        <div class="ou-stats">
+          <div class="ou-row">
+            <span class="ou-label text-green">OVER</span>
+            <div class="progress-bar">
+              <div class="progress-fill green" id="over-bar" style="width:0%"></div>
+            </div>
+            <span class="mono text-green" id="over-pct">0%</span>
+          </div>
+          <div class="ou-row mt-12">
+            <span class="ou-label text-red">UNDER</span>
+            <div class="progress-bar">
+              <div class="progress-fill red" id="under-bar" style="width:0%"></div>
+            </div>
+            <span class="mono text-red" id="under-pct">0%</span>
+          </div>
+          <div class="ou-row mt-12">
+            <span class="ou-label text-cyan">MATCH</span>
+            <div class="progress-bar">
+              <div class="progress-fill cyan" id="match-bar" style="width:0%"></div>
+            </div>
+            <span class="mono text-cyan" id="match-pct">0%</span>
+          </div>
+        </div>
+        <!-- Last 8 digits sequence -->
+        <div class="mt-16">
+          <span class="mono text-muted" style="font-size:0.72rem;">LAST 8 RESULTS</span>
+          <div class="ou-sequence mt-8" id="ou-sequence"></div>
+        </div>
+      </div>
+
+      <!-- Terminal Log -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">💻 System Terminal</span>
+          <button class="btn btn-ghost btn-sm" id="clear-terminal">Clear</button>
+        </div>
+        <div class="terminal" id="terminal">
+          <div class="terminal-line info">[SYSTEM] Zalo Oracle Pro initializing...</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── SUMMARY STATS ──────────────────────────────────────────────────── -->
+    <div class="card mt-16">
+      <div class="card-header">
+        <span class="card-title">📈 Session Summary</span>
+        <button class="btn btn-ghost btn-sm" id="reset-stats">Reset</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <span class="stat-label">Total Stake</span>
+          <span class="stat-value" id="stat-stake">0.00</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Total Payout</span>
+          <span class="stat-value" id="stat-payout">0.00</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">No. of Runs</span>
+          <span class="stat-value cyan" id="stat-runs">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Contracts Won</span>
+          <span class="stat-value profit" id="stat-won">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Contracts Lost</span>
+          <span class="stat-value loss" id="stat-lost">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Total P/L</span>
+          <span class="stat-value" id="stat-pnl">+0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── QUICK ACTIONS ──────────────────────────────────────────────────── -->
+    <div class="quick-actions mt-16">
+      <span class="mono text-muted" style="font-size:0.75rem;letter-spacing:1px;">QUICK ACTIONS</span>
+      <div class="actions-grid mt-12">
+        <a href="manual-trader.html" class="action-card">
+          <span class="action-icon">⚡</span>
+          <span class="action-label">Manual Trade</span>
+        </a>
+        <a href="analysis.html" class="action-card">
+          <span class="action-icon">🧠</span>
+          <span class="action-label">Analysis</span>
+        </a>
+        <a href="bot-settings.html" class="action-card">
+          <span class="action-icon">🤖</span>
+          <span class="action-label">Bot Settings</span>
+        </a>
+        <a href="strategies.html" class="action-card">
+          <span class="action-icon">📊</span>
+          <span class="action-label">Strategies</span>
+        </a>
+        <a href="risk-calculator.html" class="action-card">
+          <span class="action-icon">🛡️</span>
+          <span class="action-label">Risk Calc</span>
+        </a>
+        <div class="action-card" id="logout-action" style="cursor:pointer;">
+          <span class="action-icon">🚪</span>
+          <span class="action-label">Logout</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page-content -->
+</div><!-- /page-wrapper -->
+
+<!-- ── SCRIPTS ────────────────────────────────────────────────────────────── -->
+<script src="js/utils.js"></script>
+<script src="js/deriv-api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ticks.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  // ── SESSION CHECK ────────────────────────────────────────────────────────
+  Auth.autoLogin();
+
+  // ── SESSION STATS ────────────────────────────────────────────────────────
+  let sessionStats = { stake:0, payout:0, runs:0, won:0, lost:0, pnl:0 };
+
+  // ── INIT DIGIT CIRCLES ───────────────────────────────────────────────────
+  const initDigitCircles = () => {
+    const container = document.getElementById('digit-circles');
+    container.innerHTML = '';
+    for (let i = 0; i <= 9; i++) {
+      container.innerHTML += `
+        <div class="digit-circle" id="dc-${i}">
+          <span class="digit-num">${i}</span>
+          <span class="digit-pct" id="dp-${i}">0.0%</span>
+        </div>`;
+    }
+  };
+  initDigitCircles();
+
+  // ── UPDATE DIGIT CIRCLES ─────────────────────────────────────────────────
+  const updateDigitCircles = () => {
+    const n     = parseInt(document.getElementById('digit-count-select').value);
+    const stats = Ticks.getDigitStats(n);
+    const { hot, cold } = Utils.getHotColdDigits(stats.percentages);
+
+    for (let i = 0; i <= 9; i++) {
+      const circle = document.getElementById(`dc-${i}`);
+      const pctEl  = document.getElementById(`dp-${i}`);
+      if (!circle || !pctEl) continue;
+
+      pctEl.textContent = `${stats.percentages[i]}%`;
+      circle.classList.remove('hot','cold');
+      if (i === hot)  circle.classList.add('hot');
+      if (i === cold) circle.classList.add('cold');
+    }
+  };
+
+  // ── UPDATE PARITY ROW (last 20 digits) ───────────────────────────────────
+  const updateParityRow = () => {
+    const last20  = Ticks.getLastN(20);
+    const row     = document.getElementById('parity-row');
+    if (!row) return;
+
+    row.innerHTML = last20.map(price => {
+      const d    = Utils.getLastDigit(price);
+      const type = Utils.isEven(d) ? 'even' : 'odd';
+      return `<div class="parity-badge ${type}">${type[0].toUpperCase()}</div>`;
+    }).join('');
+
+    const eo = Ticks.getEvenOdd(100);
+    const evenEl = document.getElementById('even-pct');
+    const oddEl  = document.getElementById('odd-pct');
+    if (evenEl) evenEl.textContent = `${eo.evenPercent}%`;
+    if (oddEl)  oddEl.textContent  = `${eo.oddPercent}%`;
+  };
+
+  // ── UPDATE OVER/UNDER STATS ───────────────────────────────────────────────
+  const updateOUStats = () => {
+    const barrier = parseInt(document.getElementById('ou-barrier-select').value);
+    const ou      = Ticks.getOverUnder(barrier, 100);
+
+    const overBar  = document.getElementById('over-bar');
+    const underBar = document.getElementById('under-bar');
+    const matchBar = document.getElementById('match-bar');
+
+    if (overBar)  { overBar.style.width  = `${ou.overPercent}%`;   document.getElementById('over-pct').textContent  = `${ou.overPercent}%`;   }
+    if (underBar) { underBar.style.width = `${ou.underPercent}%`;  document.getElementById('under-pct').textContent = `${ou.underPercent}%`;  }
+    if (matchBar) { matchBar.style.width = `${ou.matchPercent}%`;  document.getElementById('match-pct').textContent = `${ou.matchPercent}%`;  }
+
+    // Last 8 sequence
+    const last8   = Ticks.getLastN(8);
+    const seqEl   = document.getElementById('ou-sequence');
+    if (seqEl) {
+      seqEl.innerHTML = last8.map(price => {
+        const d    = Utils.getLastDigit(price);
+        const type = d > barrier ? 'over' : d < barrier ? 'under' : 'match';
+        const cls  = type === 'over' ? 'badge-green' : type === 'under' ? 'badge-red' : 'badge-cyan';
+        return `<span class="badge ${cls}" style="margin:2px;">${type[0].toUpperCase()}</span>`;
+      }).join('');
+    }
+  };
+
+  // ── SUBSCRIBE TO MARKET ───────────────────────────────────────────────────
+  Auth.onLogin(() => {
+    const symbol = document.getElementById('market-select').value;
+    Utils.terminalLog('terminal', `Connecting to market: ${symbol}`, 'info');
+    Ticks.subscribe(symbol);
+
+    DerivAPI.on('authorized', () => {
+      document.getElementById('status-dot').className = 'authorized';
+    });
+  });
+
+  // ── ON EVERY TICK ─────────────────────────────────────────────────────────
+  Ticks.onTick(Utils.throttle((tick) => {
+    // Update tick count
+    const tcEl = document.getElementById('tick-count');
+    if (tcEl) tcEl.textContent = `Ticks: ${Ticks.getCount()}`;
+
+    // Update digit circles every 5 ticks (performance)
+    if (Ticks.getCount() % 5 === 0) {
+      updateDigitCircles();
+      updateParityRow();
+      updateOUStats();
+    }
+  }, 100));
+
+  // ── ON HISTORY LOADED ─────────────────────────────────────────────────────
+  Ticks.onHistory(() => {
+    updateDigitCircles();
+    updateParityRow();
+    updateOUStats();
+    Utils.terminalLog('terminal', 'Digit analysis ready', 'success');
+    Utils.toast('Market data loaded!', 'success');
+  });
+
+  // ── MARKET CHANGE ─────────────────────────────────────────────────────────
+  document.getElementById('market-select').addEventListener('change', (e) => {
+    const sym = e.target.value;
+    Utils.terminalLog('terminal', `Switching market to: ${sym}`, 'warning');
+    Ticks.changeMarket(sym);
+  });
+
+  // ── BARRIER CHANGE ────────────────────────────────────────────────────────
+  document.getElementById('ou-barrier-select').addEventListener('change', updateOUStats);
+  document.getElementById('digit-count-select').addEventListener('change', updateDigitCircles);
+
+  // ── CLEAR TERMINAL ────────────────────────────────────────────────────────
+  document.getElementById('clear-terminal').addEventListener('click', () => {
+    document.getElementById('terminal').innerHTML =
+      '<div class="terminal-line info">[SYSTEM] Terminal cleared.</div>';
+  });
+
+  // ── RESET STATS ───────────────────────────────────────────────────────────
+  document.getElementById('reset-stats').addEventListener('click', () => {
+    sessionStats = { stake:0, payout:0, runs:0, won:0, lost:0, pnl:0 };
+    ['stat-stake','stat-payout','stat-runs','stat-won','stat-lost'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '0';
+    });
+    document.getElementById('stat-pnl').textContent = '+0.00';
+    Utils.toast('Session stats reset', 'info');
+  });
+
+  // ── LOGOUT ────────────────────────────────────────────────────────────────
+  document.getElementById('logout-btn').addEventListener('click', Auth.logout);
+  document.getElementById('logout-action').addEventListener('click', Auth.logout);
+
+  // ── RUN BUTTON (placeholder for bot) ─────────────────────────────────────
+  let botRunning = false;
+  document.getElementById('run-btn').addEventListener('click', () => {
+    botRunning = !botRunning;
+    const btn  = document.getElementById('run-btn');
+    const icon = document.getElementById('run-icon');
+    const text = document.getElementById('run-text');
+    btn.classList.toggle('running', botRunning);
+    icon.textContent = botRunning ? '■' : '▶';
+    text.textContent = botRunning ? 'STOP' : 'RUN';
+    Utils.terminalLog('terminal', botRunning ? 'Bot started' : 'Bot stopped', botRunning ? 'success' : 'warning');
+    Utils.toast(botRunning ? 'Bot is running' : 'Bot stopped', botRunning ? 'success' : 'warning');
+  });
+
+});
+</script>
+
+</body>
+</html>

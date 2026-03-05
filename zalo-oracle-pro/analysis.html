@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zalo Oracle Pro — Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@300;400;500;600&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/analysis.css"/>
+  <style>
+    /* ── Sub-tab navigation bar ── */
+    .sub-nav {
+      display: flex; gap: 4px; flex-wrap: wrap;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 6px;
+    }
+    .sub-tab {
+      padding: 8px 18px; border-radius: calc(var(--radius) - 2px);
+      border: 1px solid transparent;
+      font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500;
+      color: var(--text-muted); cursor: pointer; background: transparent;
+      transition: var(--transition); letter-spacing: 0.5px; white-space: nowrap;
+    }
+    .sub-tab:hover  { border-color: var(--border-light); color: var(--text-secondary); }
+    .sub-tab.active { background: var(--bg-card); border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 10px rgba(0,212,255,0.15); }
+
+    /* ── Sub-pages (hidden by default) ── */
+    .sub-page { display: none; }
+    .sub-page.active { display: block; }
+
+    /* ── Digit circles ── */
+    .digit-row-lg { display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between; }
+    .dcl {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      width: 74px; height: 74px; border-radius: 50%;
+      border: 2px solid var(--border); background: var(--bg-secondary);
+      transition: var(--transition); position: relative;
+      font-family: var(--font-display);
+    }
+    .dcl .dcl-num { font-size: 1.3rem; font-weight: 900; color: var(--text-primary); line-height:1; }
+    .dcl .dcl-pct { font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-family: var(--font-mono); }
+    .dcl.current { border-color: var(--cyan); background: rgba(0,212,255,0.12); box-shadow: 0 0 16px rgba(0,212,255,0.35); }
+    .dcl.current .dcl-num { color: var(--cyan); }
+    .dcl.hot     { border-color: var(--green); background: rgba(0,230,118,0.10); }
+    .dcl.hot .dcl-num { color: var(--green); }
+    .dcl.cold    { border-color: var(--red);   background: rgba(255,71,87,0.10); }
+    .dcl.cold .dcl-num { color: var(--red); }
+    .dcl-tag {
+      position: absolute; top: -7px; right: -7px;
+      font-size: 0.48rem; font-weight: 800; padding: 2px 5px; border-radius: 3px;
+      font-family: var(--font-mono); letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .dcl-tag.t-hot  { background: var(--green); color: #080c14; }
+    .dcl-tag.t-cold { background: var(--red);   color: #fff; }
+
+    /* ── Parity bubbles ── */
+    .bubble-row { display: flex; flex-wrap: wrap; gap: 5px; }
+    .bbl {
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-display); font-size: 0.72rem; font-weight: 700;
+      border: 1.5px solid;
+    }
+    .bbl.even  { background: rgba(0,212,255,0.10); border-color: rgba(0,212,255,0.45); color: var(--cyan); }
+    .bbl.odd   { background: rgba(245,166,35,0.10); border-color: rgba(245,166,35,0.45); color: var(--gold); }
+    .bbl.over  { background: rgba(0,230,118,0.10); border-color: rgba(0,230,118,0.45); color: var(--green); }
+    .bbl.under { background: rgba(255,71,87,0.10);  border-color: rgba(255,71,87,0.45);  color: var(--red); }
+    .bbl.match { background: rgba(0,212,255,0.10); border-color: rgba(0,212,255,0.45); color: var(--cyan); }
+    .bbl.m     { background: rgba(0,230,118,0.10); border-color: rgba(0,230,118,0.45); color: var(--green); }
+    .bbl.d     { background: rgba(255,71,87,0.10);  border-color: rgba(255,71,87,0.45);  color: var(--red); }
+
+    /* ── Stat blocks ── */
+    .stat-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .stat-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-block {
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 14px; text-align: center;
+    }
+    .stat-block .sb-label { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; display: block; }
+    .stat-block .sb-value { font-family: var(--font-display); font-size: 1.2rem; font-weight: 900; display: block; margin-top: 5px; }
+
+    /* ── Summary cards for Overview ── */
+    .summary-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .summary-card {
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px;
+    }
+    .summary-card .sc-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); letter-spacing: 1px; }
+    .summary-card .sc-value { font-family: var(--font-display); font-size: 1.5rem; font-weight: 900; margin-top: 4px; }
+    .summary-card .sc-sub   { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; }
+
+    /* ── Tick analyser ── */
+    .tick-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tick-item {
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 8px 12px; min-width: 100px;
+      font-family: var(--font-mono); font-size: 0.72rem;
+    }
+    .tick-item .ti-price { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); }
+    .tick-item .ti-digit { font-size: 0.65rem; }
+    .tick-item .ti-time  { font-size: 0.58rem; color: var(--text-muted); margin-top: 2px; }
+    .tick-item.up   { border-color: rgba(0,230,118,0.4); }
+    .tick-item.down { border-color: rgba(255,71,87,0.4);  }
+
+    /* ── Signal card ── */
+    .signal-card {
+      background: var(--bg-secondary); border: 1px solid var(--border-light);
+      border-radius: var(--radius); padding: 20px; text-align: center;
+    }
+    .signal-card .sig-label { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+    .signal-card .sig-value { font-family: var(--font-display); font-size: 1.8rem; font-weight: 900; margin-top: 6px; }
+    .sig-entry-pts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+    .sig-ep {
+      width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--cyan);
+      background: var(--cyan-dim); color: var(--cyan);
+      font-family: var(--font-display); font-size: 0.9rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Toolbar ── */
+    .analysis-toolbar {
+      display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px 16px;
+    }
+    .toolbar-sep { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav class="navbar">
+  <a href="dashboard.html" class="navbar-brand">
+    <svg width="30" height="30" viewBox="0 0 48 48" fill="none">
+      <polygon points="24,3 45,13.5 45,34.5 24,45 3,34.5 3,13.5" stroke="#00d4ff" stroke-width="1.5" fill="rgba(0,212,255,0.08)"/>
+      <circle cx="24" cy="24" r="5" fill="#00d4ff"/>
+    </svg>
+    <span class="brand-name">ZALO ORACLE PRO</span>
+    <span class="brand-tag">BETA</span>
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="dashboard.html"       class="nav-link">⬛ Home</a></li>
+    <li><a href="bot-settings.html"    class="nav-link">🤖 Bot</a></li>
+    <li><a href="manual-trader.html"   class="nav-link">⚡ Manual</a></li>
+    <li><a href="analysis.html"        class="nav-link active">🧠 Analysis</a></li>
+    <li><a href="strategies.html"      class="nav-link">📊 Strategies</a></li>
+    <li><a href="risk-calculator.html" class="nav-link">🛡️ Risk</a></li>
+  </ul>
+  <div class="navbar-right">
+    <div class="balance-display">
+      <span class="balance-label">Balance</span>
+      <span class="balance-amount" data-balance>-- USD</span>
+    </div>
+    <div class="status-bar">
+      <div id="status-dot"></div>
+      <span id="status-text">Connecting...</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Exit</button>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="page-content">
+
+    <!-- ── GLOBAL TOOLBAR ── -->
+    <div class="analysis-toolbar">
+      <div class="flex flex-gap-8" style="align-items:center;">
+        <span class="mono text-muted" style="font-size:0.68rem;">MARKET</span>
+        <select class="form-select" id="market-select" style="min-width:160px;">
+          <optgroup label="Volatility (1s)">
+            <option value="1HZ10V">Vol 10 (1s)</option>
+            <option value="1HZ25V">Vol 25 (1s)</option>
+            <option value="1HZ50V">Vol 50 (1s)</option>
+            <option value="1HZ75V">Vol 75 (1s)</option>
+            <option value="1HZ100V">Vol 100 (1s)</option>
+          </optgroup>
+          <optgroup label="Volatility">
+            <option value="R_10">Vol 10</option>
+            <option value="R_25">Vol 25</option>
+            <option value="R_50">Vol 50</option>
+            <option value="R_75">Vol 75</option>
+            <option value="R_100">Vol 100</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="toolbar-sep"></div>
+      <div class="flex flex-gap-8" style="align-items:center;">
+        <span class="mono text-muted" style="font-size:0.68rem;">TICKS</span>
+        <select class="form-select" id="tick-count-select" style="width:auto;">
+          <option value="50">50</option>
+          <option value="100" selected>100</option>
+          <option value="200">200</option>
+          <option value="500">500</option>
+          <option value="1000">1000</option>
+        </select>
+      </div>
+      <div class="toolbar-sep"></div>
+      <div class="flex flex-gap-8" style="align-items:center;">
+        <span class="mono text-muted" style="font-size:0.68rem;">BARRIER</span>
+        <select class="form-select" id="barrier-select" style="width:auto;">
+          <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+          <option value="3">3</option><option value="4">4</option>
+          <option value="5" selected>5</option>
+          <option value="6">6</option><option value="7">7</option>
+          <option value="8">8</option><option value="9">9</option>
+        </select>
+      </div>
+      <div class="toolbar-sep"></div>
+      <div class="flex flex-gap-8 ml-auto" style="align-items:center;">
+        <span class="mono text-muted" style="font-size:0.7rem;">Price:</span>
+        <span data-price id="live-price" class="price-display" style="font-size:1.1rem;font-family:var(--font-display);font-weight:800;">--</span>
+        <span class="mono" style="font-size:0.78rem;">Digit: <strong data-last-digit id="live-digit" class="text-cyan">-</strong></span>
+        <span class="badge badge-green" style="font-size:0.58rem;">● LIVE</span>
+      </div>
+    </div>
+
+    <!-- ── SUB-NAV ── -->
+    <div class="sub-nav mt-12">
+      <button class="sub-tab active" data-tab="overview">📊 Overview</button>
+      <button class="sub-tab" data-tab="chart">📈 Chart</button>
+      <button class="sub-tab" data-tab="digits">🎯 Digits</button>
+      <button class="sub-tab" data-tab="evenodd">⚖️ Even/Odd</button>
+      <button class="sub-tab" data-tab="overunder">📊 Over/Under</button>
+      <button class="sub-tab" data-tab="matchdiffer">🔢 Match/Differ</button>
+      <button class="sub-tab" data-tab="tickanalyser">🔬 Tick Analyser</button>
+      <button class="sub-tab" data-tab="signals">⚡ Signal Analyzer</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- SUB-PAGE: OVERVIEW -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="sub-page active mt-16" id="page-overview">
+
+      <!-- Live price hero -->
+      <div class="card" style="padding:24px;">
+        <div class="flex-between" style="flex-wrap:wrap;gap:12px;">
+          <div>
+            <div class="mono text-muted" style="font-size:0.68rem;letter-spacing:1px;">CURRENT PRICE</div>
+            <div style="font-family:var(--font-display);font-size:2.4rem;font-weight:900;color:var(--text-primary);line-height:1.1;" data-price id="ov-price">--</div>
+            <div class="mono mt-4" style="font-size:0.78rem;">Last digit: <strong data-last-digit id="ov-digit" class="text-cyan" style="font-size:1rem;">-</strong></div>
+          </div>
+          <div class="flex flex-gap-12" style="flex-wrap:wrap;align-items:center;">
+            <div class="stat-block" style="min-width:110px;">
+              <span class="sb-label">Ticks Loaded</span>
+              <span class="sb-value text-cyan" id="ov-tick-count">0</span>
+            </div>
+            <div class="stat-block" style="min-width:110px;">
+              <span class="sb-label">Hot Digit</span>
+              <span class="sb-value text-green" id="ov-hot">-</span>
+            </div>
+            <div class="stat-block" style="min-width:110px;">
+              <span class="sb-label">Cold Digit</span>
+              <span class="sb-value text-red" id="ov-cold">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary cards row -->
+      <div class="summary-cards mt-16">
+        <div class="summary-card">
+          <div class="sc-label">Rise</div>
+          <div class="sc-value" id="ov-rise-pct">--%</div>
+          <div class="sc-sub" id="ov-rise-cnt">-- ticks</div>
+        </div>
+        <div class="summary-card">
+          <div class="sc-label">Fall</div>
+          <div class="sc-value" id="ov-fall-pct">--%</div>
+          <div class="sc-sub" id="ov-fall-cnt">-- ticks</div>
+        </div>
+        <div class="summary-card">
+          <div class="sc-label">Even</div>
+          <div class="sc-value text-cyan" id="ov-even-pct">--%</div>
+          <div class="sc-sub" id="ov-even-cnt">-- ticks</div>
+        </div>
+        <div class="summary-card">
+          <div class="sc-label">Odd</div>
+          <div class="sc-value text-gold" id="ov-odd-pct">--%</div>
+          <div class="sc-sub" id="ov-odd-cnt">-- ticks</div>
+        </div>
+        <div class="summary-card">
+          <div class="sc-label">Over <span id="ov-barrier-label">5</span></div>
+          <div class="sc-value text-green" id="ov-over-pct">--%</div>
+          <div class="sc-sub" id="ov-over-cnt">-- ticks</div>
+        </div>
+        <div class="summary-card">
+          <div class="sc-label">Under <span id="ov-barrier-label2">5</span></div>
+          <div class="sc-value text-red" id="ov-under-pct">--%</div>
+          <div class="sc-sub" id="ov-under-cnt">-- ticks</div>
+        </div>
+      </div>
+
+      <!-- Top patterns -->
+      <div class="card mt-16">
+        <div class="card-header">
+          <span class="card-title">🔁 Top Digit Patterns</span>
+          <span class="mono text-muted" style="font-size:0.68rem;">Most frequent digit → next digit sequences</span>
+        </div>
+        <div id="ov-patterns" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;"></div>
+      </div>
+
+      <!-- Recent E/O + O/U row -->
+      <div class="grid-2 mt-16">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Recent E/O</span></div>
+          <div class="bubble-row mt-10" id="ov-eo-row"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Recent O/U</span></div>
+          <div class="bubble-row mt-10" id="ov-ou-row"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- SUB-PAGE: CHART -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="sub-page mt-16" id="page-chart">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📈 Live Price Chart</span>
+          <div class="flex flex-gap-8">
+            <span class="badge badge-green">● LIVE</span>
+            <span class="mono text-muted" id="chart-tick-count" style="font-size:0.7rem;">Ticks: 0</span>
+          </div>
+        </div>
+        <div id="price-chart" style="height:420px;min-height:420px;position:relative;overflow:hidden;background:#080c14;border-radius:6px;margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- SUB-PAGE: DIGITS -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="sub-page mt-16" id="page-digits">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🎯 Digit Distribution</span>
+          <div class="flex flex-gap-8">
+            <span class="mono text-muted" id="dig-ticks-label" style="font-size:0.68rem;">100 ticks</span>
+            <span class="badge badge-red" id="dig-cold-badge">Cold: -</span>
+            <span class="badge badge-green" id="dig-hot-badge">Hot: -</span>
+          </div>
+        </div>
+        <!-- Digit circles -->
+        <div class="digit-row-lg mt-16" id="digit-circles"></div>
+        <!-- Distribution bars -->
+        <div class="mt-20">
+          <div class="mono text-muted mb-10" style="font-size:0.62rem;letter-spacing:1px;">DISTRIBUTION BARS</div>
+          <div class="digit-bars-container" id="digit-bars"></div>
+        </div>
+        <!-- Last 30 sequence -->
+        <div class="mt-18">
+          <div class="mono text-muted mb-8" style="font-size:0.62rem;letter-spacing:1px;">LAST 30 DIGITS</div>
+          <div class="digit-sequence" id="digit-sequence"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- SUB-PAGE: EVEN/ODD -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="sub-page mt-16" id="page-evenodd">
+      <div class="grid-2">
+        <!-- Left: bars -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚖️ Even vs Odd</span></div>
+          <div class="mt-16">
+            <div class="flex flex-gap-8 mb-12" style="align-items:center;">
+              <span class="mono text-cyan" style="width:40px;font-size:0.72rem;">EVEN</span>
+              <div class="progress-bar" style="flex:1;height:30px;">
+                <div class="progress-fill cyan" id="eo-even-bar" style="width:50%;transition:width 0.5s;"></div>
+              </div>
+              <span class="mono text-cyan" id="eo-even-pct" style="font-weight:700;width:50px;text-align:right;">50%</span>
+              <span class="mono text-muted" id="eo-even-count" style="font-size:0.7rem;">(50)</span>
+            </div>
+            <div class="flex flex-gap-8" style="align-items:center;">
+              <span class="mono text-gold" style="width:40px;font-size:0.72rem;">ODD</span>
+              <div class="progress-bar" style="flex:1;height:30px;">
+                <div class="progress-fill gold" id="eo-odd-bar" style="width:50%;transition:width 0.5s;"></div>
+              </div>
+              <span class="mono text-gold" id="eo-odd-pct" style="font-weight:700;width:50px;text-align:right;">50%</span>
+              <span class="mono text-muted" id="eo-odd-count" style="font-size:0.7rem;">(50)</span>
+            </div>
+            <div id="eo-verdict" class="mt-14"></div>
+          </div>
+          <!-- Recent E/O -->
+          <div class="mt-18">
+            <div class="mono text-muted mb-8" style="font-size:0.62rem;letter-spacing:1px;">RECENT E/O — LAST 40</div>
+            <div class="bubble-row" id="eo-bubble-row"></div>
+          </div>
+        </div>
+        <!-- Right: stats -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">📋 Parity Stats</span></div>
+          <div class="stat-grid-3 mt-14">
+            <div class="stat-block"><span class="sb-label">Even Count</span><span class="sb-value text-cyan" id="eo-even-cnt">0</span></div>
+            <div class="stat-block"><span class="sb-label">Odd Count</span><span class="sb-value text-gold" id="eo-odd-cnt">0</span></div>
+            <div class="stat-block"><span class="sb-label">Even %</span><span class="sb-value text-cyan" id="eo-even-p">0%</span></div>
+            <div class="stat-block"><span class="sb-label">Odd %</span><span class="sb-value text-gold" id="eo-odd-p">0%</span></div>
+            <div class="stat-block"><span class="sb-label">Even Streak</span><span class="sb-value" id="eo-even-streak">0</span></div>
+            <div class="stat-block"><span class="sb-label">Odd Streak</span><span class="sb-value" id="eo-odd-streak">0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- SUB-PAGE: OVER/UNDER -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="sub-page mt-16" id="page-overunder">
+      <div class="grid-2">
+        <!-- Left -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📊 Over / Under Analysis</span>
+            <span class="badge badge-cyan">Barrier: <span id="ou-barrier-label">5</span></span>
+          </div>
+          <div class="mt-16">
+            <div class="flex flex-gap-8 mb-10" style="align-items:center;">
+              <span class="mono text-green" style="width:68px;font-size:0.7rem;">OVER <span id="ou-over-lbl">5</span></span>
+              <div class="progress-bar" style="flex:1;height:26px;">
+                <div class="progress-fill green" id="ou-over-bar" style="width:45%;transition:width 0.5s;"></div>
+              </div>
+              <span class="mono text-green" id="ou-over-pct" style="font-weight:700;width:48px;text-align:right;">45%</span>
+              <span class="mono text-muted" id="ou-over-cnt" style="font-size:0.7rem;">(45)</span>
+            </div>
+            <div class="flex flex-gap-8 mb-10" style="align-items:center;">
+              <span class="mono text-red" style="width:68px;font-size:0.7rem;">UNDER <span id="ou-under-lbl">5</span></span>
+              <div class="progress-bar" style="flex:1;height:26px;">
+                <div class="progress-fill red" id="ou-under-bar" style="width:40%;transition:width 0.5s;"></div>
+              </div>
+              <span class="mono text-red" id="ou-under-pct" style="font-weight:700;width:48px;text-align:right;">40%</span>
+              <span class="mono text-muted" id="ou-under-cnt" style="font-size:0.7rem;">(40)</span>
+            </div>
+            <div class="flex flex-gap-8" style="align-items:center;">
+              <span class="mono text-cyan" style="width:68px;font-size:0.7rem;">EQUAL <span id="ou-match-lbl">5</span></span>
+              <div class="progress-bar" style="flex:1;height:26px;">
+                <div class="progress-fill cyan" id="ou-match-bar" style="width:15%;transition:width 0.5s;"></div>
+              </div>
+              <span class="mono text-cyan" id="ou-match-pct" style="font-weight:700;width:48px;text-align:right;">15%</span>
+              <span class="mono text-muted" id="ou-match-cnt" style="font-size:0.7rem;">(15)</span>
+            </div>
+            <div id="ou-verdict" class="mt-12"></div>
+          </div>
+          <!-- Barrier buttons -->
+          <div class="mt-16">
+            <div class="mono text-muted mb-8" style="font-size:0.62rem;letter-spacing:1px;">SET BARRIER</div>
+            <div class="barrier-digits" id="ou-barrier-btns"></div>
+          </div>
+          <!-- Recent O/U bubbles -->
+          <div class="mt-16">
+            <div class="mono text-muted mb-8" style="font-size:0.62rem;letter-spacing:1px;">RECENT U / = / O — LAST 50</div>
+            <div class="bubble-row" id="ou-bubble-row"></div>
+          </div>
+        </div>
+        <!-- Right stats -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">📋 Over/Under Stats</span></div>
+          <div class="stat-grid-3 mt-14">
+            <div class="stat-block"><span class="sb-label">Over</span><span class="sb-value text-green" id="ou-over-big">0</span></div>
+            <div class="stat-block"><span class="sb-label">Equal</span><span class="sb-value text-cyan" id="ou-match-big">0</span></div>
+            <div class="stat-block"><span class="sb-label">Under</span><span class="sb-value text-red" id="ou-under-big">0</span></div>
+          </div>
+          <div class="stat-grid-2 mt-10">
+            <div class="stat-block"><span class="sb-label">Current Over Streak</span><span class="sb-value text-green" id="ou-over-streak">0</span></div>
+            <div class="stat-block"><span class="sb-label">Current Under Streak</span><span class="sb-value text-red" id="ou-under-streak">0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- SUB-PAGE: MATCH/DIFFER -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="sub-page mt-16" id="page-matchdiffer">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🔢 Matches / Differs</span>
+          <span class="mono text-muted" style="font-size:0.68rem;">Select a digit to analyze</span>
+        </div>
+        <div class="barrier-digits mt-12" id="md-digit-btns"></div>
+        <div class="grid-2 mt-16">
+          <div>
+            <div class="flex flex-gap-8 mb-10" style="align-items:center;">
+              <span class="mono text-green" style="width:64px;font-size:0.7rem;">MATCHES</span>
+              <div class="progress-bar" style="flex:1;height:24px;">
+                <div class="progress-fill green" id="md-match-bar" style="width:10%;transition:width 0.5s;"></div>
+              </div>
+              <span class="mono text-green" id="md-match-pct" style="font-weight:700;width:48px;text-align:right;">10%</span>
+              <span class="mono text-muted" id="md-match-cnt" style="font-size:0.7rem;">(10)</span>
+            </div>
+            <div class="flex flex-gap-8" style="align-items:center;">
+              <span class="mono text-red" style="width:64px;font-size:0.7rem;">DIFFERS</span>
+              <div class="progress-bar" style="flex:1;height:24px;">
+                <div class="progress-fill red" id="md-differ-bar" style="width:90%;transition:width 0.5s;"></div>
+              </div>
+              <span class="mono text-red" id="md-differ-pct" style="font-weight:700;width:48px;text-align:right;">90%</span>
+              <span class="mono text-muted" id="md-differ-cnt" style="font-size:0.7rem;">(90)</span>
+            </div>
+          </div>
+          <div>
+            <div class="stat-grid-2">
+              <div class="stat-block"><span class="sb-label">Matches</span><span class="sb-value text-green" id="md-match-big">0</span></div>
+              <div class="stat-block"><span class="sb-label">Differs</span><span class="sb-value text-red" id="md-differ-big">0</span></div>
+            </div>
+            <div class="stat-block mt-10">
+              <span class="sb-label">Selected Digit</span>
+              <span class="sb-value text-cyan" id="md-selected-digit">0</span>
+            </div>
+          </div>
+        </div>
+        <div class="mt-16">
+          <div class="mono text-muted mb-8" style="font-size:0.62rem;letter-spacing:1px;">RECENT MATCH / DIFFER — LAST 50</div>
+          <div class="bubble-row" id="md-bubble-row"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- SUB-PAGE: TICK ANALYSER -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="sub-page mt-16" id="page-tickanalyser">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🔬 Tick Analyser</span>
+          <div class="flex flex-gap-8">
+            <span class="badge badge-green">● LIVE FEED</span>
+            <span class="mono text-muted" id="ta-count" style="font-size:0.7rem;">0 ticks</span>
+          </div>
+        </div>
+        <!-- Summary row -->
+        <div class="summary-cards mt-14" id="ta-summary"></div>
+        <!-- Tick list -->
+        <div class="mt-18">
+          <div class="mono text-muted mb-8" style="font-size:0.62rem;letter-spacing:1px;">LAST 100 TICKS — NEWEST FIRST</div>
+          <div class="tick-row" id="ta-tick-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- SUB-PAGE: SIGNAL ANALYZER -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="sub-page mt-16" id="page-signals">
+      <div class="grid-2">
+        <!-- Controls -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">⚡ Signal Analyzer</span>
+            <span class="mono text-muted" style="font-size:0.68rem;">Live market reading</span>
+          </div>
+          <div class="form-group mt-16">
+            <label class="form-label">Trade Strategy</label>
+            <select class="form-select" id="sig-strategy">
+              <option value="even-odd">Even / Odd</option>
+              <option value="over-under">Over / Under</option>
+              <option value="matches-differs">Matches / Differs</option>
+              <option value="rise-fall">Rise / Fall</option>
+            </select>
+          </div>
+          <div class="form-group mt-12">
+            <label class="form-label">Entry Sensitivity</label>
+            <select class="form-select" id="sig-sensitivity">
+              <option value="conservative">Conservative (55%+)</option>
+              <option value="balanced" selected>Balanced (52%+)</option>
+              <option value="aggressive">Aggressive (50%+)</option>
+            </select>
+          </div>
+          <div class="form-group mt-12">
+            <label class="form-label">Analysis Window</label>
+            <select class="form-select" id="sig-window">
+              <option value="20">Last 20 ticks</option>
+              <option value="50" selected>Last 50 ticks</option>
+              <option value="100">Last 100 ticks</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-full mt-20" id="sig-analyse-btn" style="padding:15px;font-size:0.9rem;letter-spacing:1px;">
+            ⚡ ANALYSE NOW
+          </button>
+          <div class="mt-14 card" style="background:rgba(0,212,255,0.04);border-color:rgba(0,212,255,0.12);">
+            <div class="mono text-muted mb-6" style="font-size:0.6rem;letter-spacing:1px;">HOW TO USE</div>
+            <div class="mono" style="font-size:0.68rem;line-height:1.8;color:var(--text-secondary);">
+              1. Select your preferred strategy<br/>
+              2. Set sensitivity threshold<br/>
+              3. Press ANALYSE<br/>
+              4. Signal shows BET direction + entry points<br/>
+              5. WAIT = no clear signal, don't trade
+            </div>
+          </div>
+        </div>
+        <!-- Results -->
+        <div id="sig-results">
+          <div class="card" style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;min-height:300px;">
+            <span style="font-size:3rem;">🎯</span>
+            <span class="mono text-muted" style="font-size:0.8rem;">Press ANALYSE to get a trade signal</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Signal history -->
+      <div class="card mt-16">
+        <div class="card-header">
+          <span class="card-title">📜 Signal History</span>
+          <button class="btn btn-ghost btn-sm" id="sig-clear-history">Clear</button>
+        </div>
+        <div id="sig-history" style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+          <div class="mono text-muted" style="font-size:0.72rem;padding:12px;text-align:center;">No signals yet</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/utils.js"></script>
+<script src="js/deriv-api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ticks.js"></script>
+<script src="js/analysis.js"></script>
+<script src="js/charts.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  Auth.autoLogin();
+
+  let currentBarrier  = 5;
+  let selectedMDDigit = 0;
+  let signalHistory   = [];
+  let tickLog         = [];   // for tick analyser
+
+  // ── Sub-tab switching ──────────────────────────────────────────
+  document.querySelectorAll('.sub-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.sub-page').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('page-' + tab.dataset.tab).classList.add('active');
+      // Re-init chart if switching to chart tab
+      if (tab.dataset.tab === 'chart') {
+        setTimeout(() => { Charts.initLineChart('price-chart'); Charts.loadHistory(Ticks.getHistory()); }, 50);
+      }
+      if (tab.dataset.tab === 'tickanalyser') refreshTickAnalyser();
+    });
+  });
+
+  // ── Init chart (non-visible, initialised later on tab switch) ──
+  Charts.initLineChart('price-chart');
+
+  // ── Init digit circles ──────────────────────────────────────────
+  const initDigitCircles = () => {
+    const c = document.getElementById('digit-circles');
+    if (!c) return;
+    c.innerHTML = '';
+    for (let i = 0; i <= 9; i++) {
+      c.innerHTML += `<div class="dcl" id="dcl-${i}">
+        <span class="dcl-num">${i}</span>
+        <span class="dcl-pct" id="dclp-${i}">0%</span>
+      </div>`;
+    }
+  };
+  initDigitCircles();
+
+  // ── Init barrier buttons ────────────────────────────────────────
+  const initBarrierBtns = (containerId, onChange) => {
+    const c = document.getElementById(containerId);
+    if (!c) return;
+    c.innerHTML = '';
+    for (let i = 0; i <= 9; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'barrier-btn' + (i === 5 ? ' active' : '');
+      btn.textContent = i;
+      btn.addEventListener('click', () => {
+        c.querySelectorAll('.barrier-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        onChange(i);
+      });
+      c.appendChild(btn);
+    }
+  };
+  initBarrierBtns('ou-barrier-btns', (v) => {
+    currentBarrier = v;
+    document.getElementById('barrier-select').value = v;
+    document.getElementById('ou-barrier-label').textContent = v;
+    ['ou-over-lbl','ou-under-lbl','ou-match-lbl'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=v; });
+    ['ov-barrier-label','ov-barrier-label2'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=v; });
+    refreshAll();
+  });
+
+  // ── Init M/D digit buttons ──────────────────────────────────────
+  const initMDDigitBtns = () => {
+    const c = document.getElementById('md-digit-btns');
+    if (!c) return;
+    c.innerHTML = '';
+    for (let i = 0; i <= 9; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'barrier-btn' + (i === 0 ? ' active' : '');
+      btn.textContent = i;
+      btn.addEventListener('click', () => {
+        c.querySelectorAll('.barrier-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedMDDigit = i;
+        const el = document.getElementById('md-selected-digit'); if (el) el.textContent = i;
+        refreshMatchesDiffers();
+      });
+      c.appendChild(btn);
+    }
+  };
+  initMDDigitBtns();
+
+  // helper
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  const setW = (id, pct) => { const el = document.getElementById(id); if (el) el.style.width = `${pct}%`; };
+
+  // ── REFRESH ALL ─────────────────────────────────────────────────
+  const refreshAll = () => {
+    const n     = parseInt(document.getElementById('tick-count-select').value);
+    const ticks = Ticks.getLastN(n);
+    if (!ticks.length) return;
+    refreshOverview(ticks, n);
+    refreshDigits(ticks, n);
+    refreshEvenOdd(ticks);
+    refreshOverUnder(ticks);
+    refreshMatchesDiffers(ticks);
+  };
+
+  // ── OVERVIEW ────────────────────────────────────────────────────
+  const refreshOverview = (ticks, n) => {
+    const ds = Utils.calcDigitStats(ticks);
+    const eo = Utils.calcEvenOdd(ticks);
+    const ou = Utils.calcOverUnder(ticks, currentBarrier);
+    const { hot, cold } = Utils.getHotColdDigits(ds.percentages);
+
+    // Rise/fall from price direction
+    let rises = 0, falls = 0;
+    for (let i = 1; i < ticks.length; i++) {
+      if (ticks[i] > ticks[i-1]) rises++; else if (ticks[i] < ticks[i-1]) falls++;
+    }
+    const total = ticks.length;
+    const risePct  = Math.round((rises / (total-1)) * 100);
+    const fallPct  = 100 - risePct;
+
+    set('ov-tick-count', Ticks.getCount());
+    set('ov-hot',  `${hot} (${ds.percentages[hot]}%)`);
+    set('ov-cold', `${cold} (${ds.percentages[cold]}%)`);
+    set('ov-rise-pct',  `${risePct}%`); set('ov-rise-cnt',  `${rises} ticks`);
+    set('ov-fall-pct',  `${fallPct}%`); set('ov-fall-cnt',  `${falls} ticks`);
+    set('ov-even-pct',  `${eo.evenPercent}%`); set('ov-even-cnt', `${eo.even} ticks`);
+    set('ov-odd-pct',   `${eo.oddPercent}%`);  set('ov-odd-cnt',  `${eo.odd} ticks`);
+    set('ov-over-pct',  `${ou.overPercent}%`);  set('ov-over-cnt',  `${ou.over} ticks`);
+    set('ov-under-pct', `${ou.underPercent}%`); set('ov-under-cnt', `${ou.under} ticks`);
+
+    // Color rise/fall
+    const rvEl = document.getElementById('ov-rise-pct'); if (rvEl) rvEl.style.color = risePct >= 50 ? 'var(--green)' : 'var(--red)';
+    const fvEl = document.getElementById('ov-fall-pct'); if (fvEl) fvEl.style.color = fallPct >= 50 ? 'var(--red)' : 'var(--green)';
+
+    // Top patterns — find common 2-digit sequences
+    const patterns = {};
+    for (let i = 0; i < ticks.length - 1; i++) {
+      const a = Utils.getLastDigit(ticks[i]);
+      const b = Utils.getLastDigit(ticks[i+1]);
+      const key = `${a}→${b}`;
+      patterns[key] = (patterns[key] || 0) + 1;
+    }
+    const top = Object.entries(patterns).sort((a,b) => b[1]-a[1]).slice(0,8);
+    const patEl = document.getElementById('ov-patterns');
+    if (patEl) {
+      patEl.innerHTML = top.map(([k,v]) => `
+        <div class="stat-block" style="min-width:90px;text-align:center;">
+          <span class="sb-label">${k}</span>
+          <span class="sb-value text-cyan" style="font-size:1rem;">${v}</span>
+          <span style="font-size:0.58rem;color:var(--text-muted);font-family:var(--font-mono);">${((v/(total-1))*100).toFixed(2)}%</span>
+        </div>`).join('');
+    }
+
+    // E/O bubbles overview
+    const eoRow = document.getElementById('ov-eo-row');
+    if (eoRow) {
+      eoRow.innerHTML = ticks.slice(-20).map(p => {
+        const d = Utils.getLastDigit(p); const t = Utils.isEven(d)?'even':'odd';
+        return `<div class="bbl ${t}">${t[0].toUpperCase()}</div>`;
+      }).join('');
+    }
+
+    // O/U bubbles overview
+    const ouRow = document.getElementById('ov-ou-row');
+    if (ouRow) {
+      ouRow.innerHTML = ticks.slice(-20).map(p => {
+        const d = Utils.getLastDigit(p);
+        const t = d > currentBarrier ? 'over' : d < currentBarrier ? 'under' : 'match';
+        const l = t==='over'?'O':t==='under'?'U':'=';
+        return `<div class="bbl ${t}">${l}</div>`;
+      }).join('');
+    }
+  };
+
+  // ── DIGITS ──────────────────────────────────────────────────────
+  const refreshDigits = (ticks, n) => {
+    const stats = Utils.calcDigitStats(ticks);
+    const { hot, cold } = Utils.getHotColdDigits(stats.percentages);
+    const lastDigit = Utils.getLastDigit(ticks[ticks.length - 1]);
+
+    set('dig-ticks-label', `${ticks.length} ticks`);
+    const hb = document.getElementById('dig-hot-badge');  if (hb) hb.textContent  = `Hot: ${hot} (${stats.percentages[hot]}%)`;
+    const cb = document.getElementById('dig-cold-badge'); if (cb) cb.textContent = `Cold: ${cold} (${stats.percentages[cold]}%)`;
+
+    for (let i = 0; i <= 9; i++) {
+      const circle = document.getElementById(`dcl-${i}`);
+      const pctEl  = document.getElementById(`dclp-${i}`);
+      if (!circle || !pctEl) continue;
+      pctEl.textContent = `${stats.percentages[i]}%`;
+      circle.className = 'dcl';
+      if (i === lastDigit)  circle.classList.add('current');
+      else if (i === hot)   circle.classList.add('hot');
+      else if (i === cold)  circle.classList.add('cold');
+      circle.querySelectorAll('.dcl-tag').forEach(t => t.remove());
+      if (i === hot) {
+        const t = document.createElement('span'); t.className='dcl-tag t-hot'; t.textContent='HOT'; circle.appendChild(t);
+      } else if (i === cold) {
+        const t = document.createElement('span'); t.className='dcl-tag t-cold'; t.textContent='COLD'; circle.appendChild(t);
+      }
+    }
+    Analysis.renderDigitBars('digit-bars', stats);
+
+    const seqEl = document.getElementById('digit-sequence');
+    if (seqEl) {
+      seqEl.innerHTML = ticks.slice(-30).map(p => {
+        const d=Utils.getLastDigit(p); const t=Utils.isEven(d)?'even':'odd';
+        return `<div class="seq-digit ${t}">${d}</div>`;
+      }).join('');
+    }
+  };
+
+  // ── EVEN/ODD ────────────────────────────────────────────────────
+  const refreshEvenOdd = (ticks) => {
+    const eo = Utils.calcEvenOdd(ticks);
+    const evenStreak = Analysis.getStreak(ticks, 'even');
+    const oddStreak  = Analysis.getStreak(ticks, 'odd');
+
+    setW('eo-even-bar', eo.evenPercent); setW('eo-odd-bar', eo.oddPercent);
+    set('eo-even-pct', `${eo.evenPercent}%`); set('eo-odd-pct', `${eo.oddPercent}%`);
+    set('eo-even-count', `(${eo.even})`);  set('eo-odd-count', `(${eo.odd})`);
+    set('eo-even-cnt', eo.even); set('eo-odd-cnt', eo.odd);
+    set('eo-even-p', `${eo.evenPercent}%`); set('eo-odd-p', `${eo.oddPercent}%`);
+
+    const esEl = document.getElementById('eo-even-streak');
+    if (esEl) { esEl.textContent = evenStreak; esEl.className = `sb-value ${evenStreak >= 5 ? 'text-gold' : 'text-cyan'}`; }
+    const osEl = document.getElementById('eo-odd-streak');
+    if (osEl) { osEl.textContent = oddStreak;  osEl.className = `sb-value ${oddStreak  >= 5 ? 'text-gold' : 'text-gold'}`; }
+
+    const vEl = document.getElementById('eo-verdict');
+    if (vEl) {
+      vEl.innerHTML = eo.evenPercent > eo.oddPercent
+        ? `<span class="badge badge-cyan">📊 EVEN is dominant (${eo.evenPercent}%)</span>`
+        : eo.oddPercent > eo.evenPercent
+        ? `<span class="badge badge-gold">📊 ODD is dominant (${eo.oddPercent}%)</span>`
+        : `<span class="badge badge-green">📊 Balanced (50/50)</span>`;
+    }
+
+    const br = document.getElementById('eo-bubble-row');
+    if (br) {
+      br.innerHTML = ticks.slice(-40).map(p => {
+        const d=Utils.getLastDigit(p); const t=Utils.isEven(d)?'even':'odd';
+        return `<div class="bbl ${t}">${t[0].toUpperCase()}</div>`;
+      }).join('');
+    }
+  };
+
+  // ── OVER/UNDER ──────────────────────────────────────────────────
+  const refreshOverUnder = (ticks) => {
+    const ou = Utils.calcOverUnder(ticks, currentBarrier);
+    const overStreak  = Analysis.getStreak(ticks, 'over5');
+    const underStreak = Analysis.getStreak(ticks, 'under5');
+
+    setW('ou-over-bar', ou.overPercent); setW('ou-under-bar', ou.underPercent); setW('ou-match-bar', ou.matchPercent);
+    set('ou-over-pct',  `${ou.overPercent}%`);  set('ou-under-pct', `${ou.underPercent}%`); set('ou-match-pct', `${ou.matchPercent}%`);
+    set('ou-over-cnt',  `(${ou.over})`);         set('ou-under-cnt', `(${ou.under})`);       set('ou-match-cnt', `(${ou.matches})`);
+    set('ou-over-big',  ou.over);                set('ou-under-big', ou.under);              set('ou-match-big', ou.matches);
+    set('ou-over-streak', overStreak); set('ou-under-streak', underStreak);
+
+    const vEl = document.getElementById('ou-verdict');
+    if (vEl) {
+      vEl.innerHTML = ou.overPercent > ou.underPercent
+        ? `<span class="badge badge-green">📈 OVER ${currentBarrier} dominant (${ou.overPercent}%)</span>`
+        : ou.underPercent > ou.overPercent
+        ? `<span class="badge badge-red">📉 UNDER ${currentBarrier} dominant (${ou.underPercent}%)</span>`
+        : `<span class="badge badge-cyan">📊 Balanced</span>`;
+    }
+
+    const br = document.getElementById('ou-bubble-row');
+    if (br) {
+      br.innerHTML = ticks.slice(-50).map(p => {
+        const d=Utils.getLastDigit(p);
+        const t = d > currentBarrier ? 'over' : d < currentBarrier ? 'under' : 'match';
+        const l = t==='over'?'O':t==='under'?'U':'=';
+        return `<div class="bbl ${t}" style="flex-direction:column;font-size:0.5rem;"><span style="font-size:0.7rem;font-weight:800;">${d}</span>${l}</div>`;
+      }).join('');
+    }
+  };
+
+  // ── MATCHES/DIFFERS ─────────────────────────────────────────────
+  const refreshMatchesDiffers = (ticks) => {
+    if (!ticks) ticks = Ticks.getLastN(parseInt(document.getElementById('tick-count-select').value));
+    if (!ticks.length) return;
+    let matches = 0, differs = 0;
+    const recent = [];
+    ticks.forEach(p => {
+      const d = Utils.getLastDigit(p);
+      if (d === selectedMDDigit) { matches++; recent.push({d, t:'m'}); }
+      else                       { differs++; recent.push({d, t:'d'}); }
+    });
+    const total = ticks.length;
+    const mPct = Math.round((matches/total)*100);
+    const dPct = 100 - mPct;
+    setW('md-match-bar', mPct); setW('md-differ-bar', dPct);
+    set('md-match-pct', `${mPct}%`); set('md-differ-pct', `${dPct}%`);
+    set('md-match-cnt', `(${matches})`); set('md-differ-cnt', `(${differs})`);
+    set('md-match-big', matches); set('md-differ-big', differs);
+
+    const br = document.getElementById('md-bubble-row');
+    if (br) {
+      br.innerHTML = recent.slice(-50).map(r =>
+        `<div class="bbl ${r.t}" style="flex-direction:column;font-size:0.5rem;"><span style="font-size:0.7rem;font-weight:800;">${r.d}</span>${r.t.toUpperCase()}</div>`
+      ).join('');
+    }
+  };
+
+  // ── TICK ANALYSER ───────────────────────────────────────────────
+  const refreshTickAnalyser = () => {
+    const ticks = Ticks.getLastN(100);
+    set('ta-count', `${Ticks.getCount()} ticks`);
+
+    // Summary
+    const ta = document.getElementById('ta-summary');
+    if (ta && ticks.length) {
+      const ds = Utils.calcDigitStats(ticks);
+      const eo = Utils.calcEvenOdd(ticks);
+      const ou = Utils.calcOverUnder(ticks, currentBarrier);
+      const { hot, cold } = Utils.getHotColdDigits(ds.percentages);
+      ta.innerHTML = `
+        <div class="summary-card"><div class="sc-label">Price</div><div class="sc-value" data-price>${Ticks.getLastPrice()?.toFixed(2)||'--'}</div></div>
+        <div class="summary-card"><div class="sc-label">Last Digit</div><div class="sc-value text-cyan" data-last-digit>${Ticks.getLastDigit()??'-'}</div></div>
+        <div class="summary-card"><div class="sc-label">Hot Digit</div><div class="sc-value text-green">${hot}</div></div>
+        <div class="summary-card"><div class="sc-label">Cold Digit</div><div class="sc-value text-red">${cold}</div></div>
+        <div class="summary-card"><div class="sc-label">Even %</div><div class="sc-value text-cyan">${eo.evenPercent}%</div></div>
+        <div class="summary-card"><div class="sc-label">Over ${currentBarrier} %</div><div class="sc-value text-green">${ou.overPercent}%</div></div>`;
+    }
+
+    // Tick list
+    const tl = document.getElementById('ta-tick-list');
+    if (tl && tickLog.length) {
+      tl.innerHTML = [...tickLog].reverse().slice(0, 100).map(t => `
+        <div class="tick-item ${t.dir}">
+          <div class="ti-price">${parseFloat(t.price).toFixed(2)}</div>
+          <div class="ti-digit" style="color:${Utils.isEven(t.digit) ? 'var(--cyan)' : 'var(--gold)'};">Digit: ${t.digit} · ${Utils.isEven(t.digit)?'E':'O'}</div>
+          <div class="ti-time">${t.time}</div>
+        </div>`).join('');
+    }
+  };
+
+  // ── SIGNAL ANALYZER ─────────────────────────────────────────────
+  document.getElementById('sig-analyse-btn').addEventListener('click', () => {
+    const strategy = document.getElementById('sig-strategy').value;
+    const sens     = document.getElementById('sig-sensitivity').value;
+    const win      = parseInt(document.getElementById('sig-window').value);
+    const ticks    = Ticks.getLastN(win);
+    const resultsEl = document.getElementById('sig-results');
+
+    if (!ticks.length) {
+      resultsEl.innerHTML = `<div class="card"><span class="mono text-red" style="padding:20px;display:block;">No tick data yet.</span></div>`;
+      return;
+    }
+
+    const threshold = sens === 'conservative' ? 55 : sens === 'balanced' ? 52 : 50;
+    const eo  = Utils.calcEvenOdd(ticks);
+    const ou  = Utils.calcOverUnder(ticks, currentBarrier);
+    const ds  = Utils.calcDigitStats(ticks);
+    const { hot, cold } = Utils.getHotColdDigits(ds.percentages);
+    const evenStreak  = Analysis.getStreak(ticks, 'even');
+    const oddStreak   = Analysis.getStreak(ticks, 'odd');
+    const overStreak  = Analysis.getStreak(ticks, 'over5');
+    const underStreak = Analysis.getStreak(ticks, 'under5');
+
+    let signal = 'WAIT', confidence = 50, entry = [], reason = '', color = 'var(--text-muted)';
+
+    if (strategy === 'even-odd') {
+      if (eo.oddPercent >= threshold && oddStreak >= 2)  { signal='BET EVEN'; confidence=eo.oddPercent; color='var(--cyan)'; reason=`Odd at ${eo.oddPercent}% (streak:${oddStreak}) — reversion expected`; entry=[0,2,4,6,8]; }
+      else if (eo.evenPercent >= threshold && evenStreak >= 2) { signal='BET ODD'; confidence=eo.evenPercent; color='var(--gold)'; reason=`Even at ${eo.evenPercent}% (streak:${evenStreak}) — reversion expected`; entry=[1,3,5,7,9]; }
+      else { reason=`No strong parity signal (${eo.evenPercent}% / ${eo.oddPercent}%)`; }
+    } else if (strategy === 'over-under') {
+      if (ou.underPercent >= threshold && underStreak >= 2) { signal=`BET OVER ${currentBarrier}`; confidence=ou.underPercent; color='var(--green)'; reason=`Under at ${ou.underPercent}% (streak:${underStreak})`; entry=[currentBarrier+1,currentBarrier+2].filter(x=>x<=9); }
+      else if (ou.overPercent >= threshold && overStreak >= 2) { signal=`BET UNDER ${currentBarrier}`; confidence=ou.overPercent; color='var(--red)'; reason=`Over at ${ou.overPercent}% (streak:${overStreak})`; entry=[currentBarrier-1,currentBarrier-2].filter(x=>x>=0); }
+      else { reason=`No clear directional bias`; }
+    } else if (strategy === 'matches-differs') {
+      const coldPct = ds.percentages[cold];
+      if (coldPct < 8) { signal=`MATCHES on ${cold}`; confidence=Math.round((1 - coldPct/10)*100); color='var(--green)'; reason=`Cold digit ${cold} at ${coldPct}% — overdue`; entry=[cold]; }
+      else { signal=`DIFFERS on ${hot}`; confidence=100 - ds.percentages[hot]; color='var(--red)'; reason=`Hot digit ${hot} at ${ds.percentages[hot]}% — differs wins ${100-ds.percentages[hot]}% of time`; entry=[cold]; }
+    } else if (strategy === 'rise-fall') {
+      let rises=0, falls=0;
+      for (let i=1; i<ticks.length; i++) { if(ticks[i]>ticks[i-1]) rises++; else if(ticks[i]<ticks[i-1]) falls++; }
+      const risePct = Math.round((rises/(ticks.length-1))*100);
+      if (risePct >= threshold) { signal='FALL'; confidence=risePct; color='var(--red)'; reason=`${risePct}% rises in last ${win} ticks — fall expected`; }
+      else if ((100-risePct) >= threshold) { signal='RISE'; confidence=100-risePct; color='var(--green)'; reason=`${100-risePct}% falls in last ${win} ticks — rise expected`; }
+      else { reason=`No clear momentum (${risePct}% rise / ${100-risePct}% fall)`; }
+    }
+
+    const confColor = confidence >= 60 ? 'var(--green)' : confidence >= 52 ? 'var(--gold)' : 'var(--text-muted)';
+    const entryHTML = entry.length ? `<div class="sig-entry-pts">${entry.map(e=>`<div class="sig-ep">${e}</div>`).join('')}</div>` : '';
+
+    resultsEl.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="signal-card">
+          <div class="sig-label">SIGNAL</div>
+          <div class="sig-value" style="color:${color};">${signal}</div>
+          ${entryHTML}
+        </div>
+        <div class="signal-card">
+          <div class="sig-label">CONFIDENCE</div>
+          <div class="sig-value" style="color:${confColor};">${confidence}%</div>
+          <div class="progress-bar mt-8" style="height:6px;"><div class="progress-fill" style="width:${confidence}%;background:${confColor};"></div></div>
+        </div>
+        <div class="signal-card">
+          <div class="sig-label">REASONING</div>
+          <div class="mono mt-8" style="font-size:0.72rem;color:var(--text-secondary);line-height:1.6;">${reason}</div>
+        </div>
+      </div>`;
+
+    // Add to history
+    const ts = Utils.getDateTime();
+    const stratLabel = document.getElementById('sig-strategy').options[document.getElementById('sig-strategy').selectedIndex].text;
+    signalHistory.unshift({ signal, confidence, color, reason, strategy: stratLabel, ts });
+    if (signalHistory.length > 20) signalHistory.pop();
+
+    const histEl = document.getElementById('sig-history');
+    if (histEl) {
+      histEl.innerHTML = signalHistory.map(s => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);">
+          <div>
+            <span style="font-family:var(--font-display);font-weight:700;color:${s.color};">${s.signal}</span>
+            <span class="mono text-muted" style="font-size:0.65rem;margin-left:8px;">${s.strategy}</span>
+          </div>
+          <div class="flex flex-gap-8" style="align-items:center;">
+            <span class="mono" style="font-size:0.68rem;color:${s.confidence>=55?'var(--green)':'var(--text-muted)'};">${s.confidence}%</span>
+            <span class="mono text-muted" style="font-size:0.6rem;">${s.ts}</span>
+          </div>
+        </div>`).join('');
+    }
+  });
+
+  document.getElementById('sig-clear-history').addEventListener('click', () => {
+    signalHistory = [];
+    const h = document.getElementById('sig-history');
+    if (h) h.innerHTML = `<div class="mono text-muted" style="font-size:0.72rem;padding:12px;text-align:center;">No signals yet</div>`;
+  });
+
+  // ── TOOLBAR EVENTS ──────────────────────────────────────────────
+  document.getElementById('market-select').addEventListener('change', (e) => {
+    Charts.reset();
+    tickLog = [];
+    Ticks.changeMarket(e.target.value);
+  });
+
+  document.getElementById('tick-count-select').addEventListener('change', refreshAll);
+
+  document.getElementById('barrier-select').addEventListener('change', (e) => {
+    currentBarrier = parseInt(e.target.value);
+    document.getElementById('ou-barrier-label').textContent = currentBarrier;
+    ['ou-over-lbl','ou-under-lbl','ou-match-lbl'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=currentBarrier; });
+    ['ov-barrier-label','ov-barrier-label2'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=currentBarrier; });
+    document.querySelectorAll('#ou-barrier-btns .barrier-btn').forEach(b => {
+      b.classList.toggle('active', parseInt(b.textContent) === currentBarrier);
+    });
+    refreshAll();
+  });
+
+  // ── TICKS ───────────────────────────────────────────────────────
+  Auth.onLogin(() => {
+    Ticks.subscribe(document.getElementById('market-select').value);
+  });
+
+  Ticks.onHistory((historyData) => {
+    Charts.loadHistory(historyData);
+    tickLog = [];
+    refreshAll();
+    Utils.toast('Analysis ready!', 'success');
+  });
+
+  Ticks.onTick((tick) => {
+    // Chart — always live
+    Charts.addTick(tick.price, tick.epoch);
+
+    // Tick log for analyser
+    tickLog.push({ price: tick.price, digit: tick.digit, dir: tick.direction, time: tick.time || '--' });
+    if (tickLog.length > 200) tickLog.shift();
+
+    // Chart tick count
+    const el = document.getElementById('chart-tick-count');
+    if (el) el.textContent = `Ticks: ${Ticks.getCount()}`;
+
+    // Refresh active sub-page analysis — every tick, no throttle
+    const activeTab = document.querySelector('.sub-tab.active');
+    const activeId  = activeTab ? activeTab.dataset.tab : 'overview';
+    if (activeId === 'overview')     refreshOverview(Ticks.getLastN(parseInt(document.getElementById('tick-count-select').value)));
+    else if (activeId === 'digits')  { const n=parseInt(document.getElementById('tick-count-select').value); refreshDigits(Ticks.getLastN(n), n); }
+    else if (activeId === 'evenodd') refreshEvenOdd(Ticks.getLastN(parseInt(document.getElementById('tick-count-select').value)));
+    else if (activeId === 'overunder') refreshOverUnder(Ticks.getLastN(parseInt(document.getElementById('tick-count-select').value)));
+    else if (activeId === 'matchdiffer') refreshMatchesDiffers(Ticks.getLastN(parseInt(document.getElementById('tick-count-select').value)));
+    else if (activeId === 'tickanalyser') refreshTickAnalyser();
+  });
+
+});
+</script>
+</body>
+</html>

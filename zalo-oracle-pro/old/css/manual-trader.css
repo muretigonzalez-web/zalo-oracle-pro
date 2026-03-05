@@ -1,0 +1,119 @@
+/**
+ * ZALO ORACLE PRO
+ * FILE: css/manual-trader.css
+ * PURPOSE: Manual trader page specific styles
+ */
+
+/* ─── TOP ROW ───────────────────────────────────────────────────────────────── */
+.mt-top-row {
+  display               : grid;
+  grid-template-columns : 1fr 1.4fr 1fr;
+  gap                   : 16px;
+  align-items           : start;
+}
+
+@media (max-width: 1000px) {
+  .mt-top-row { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 640px) {
+  .mt-top-row { grid-template-columns: 1fr; }
+}
+
+/* ─── PRICE BLOCK ───────────────────────────────────────────────────────────── */
+.mt-price-block { text-align: center; }
+.mt-price-block .price-display { font-size: 2rem; }
+
+/* ─── TRADE SETTINGS GRID ───────────────────────────────────────────────────── */
+.trade-settings-grid {
+  display               : grid;
+  grid-template-columns : 1fr 1fr;
+  gap                   : 12px;
+}
+
+/* ─── MAIN TRADING GRID ─────────────────────────────────────────────────────── */
+.mt-main-grid {
+  display               : grid;
+  grid-template-columns : 1fr 1fr 1fr;
+  gap                   : 16px;
+  align-items           : start;
+}
+
+@media (max-width: 1100px) {
+  .mt-main-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 700px) {
+  .mt-main-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── OVER/UNDER TRADE BUTTONS ──────────────────────────────────────────────── */
+.ou-trade-btns {
+  display : grid;
+  grid-template-columns: 1fr 1fr;
+  gap     : 10px;
+}
+
+/* ─── MATCHES/DIFFERS BUTTONS ───────────────────────────────────────────────── */
+.md-trade-btns {
+  display : grid;
+  grid-template-columns: 1fr 1fr;
+  gap     : 10px;
+}
+
+/* ─── EVEN/ODD TRADE BUTTONS ────────────────────────────────────────────────── */
+.eo-trade-btns {
+  display : grid;
+  grid-template-columns: 1fr 1fr;
+  gap     : 10px;
+}
+
+.eo-trade-btns .btn span {
+  display         : inline-flex;
+  align-items     : center;
+  justify-content : center;
+  width           : 22px;
+  height          : 22px;
+  border-radius   : 50%;
+  background      : rgba(255,255,255,0.2);
+  font-family     : var(--font-display);
+  font-size       : 0.7rem;
+  font-weight     : 800;
+}
+
+/* ─── RISE/FALL ─────────────────────────────────────────────────────────────── */
+.rf-sequence {
+  display   : flex;
+  flex-wrap : wrap;
+  gap       : 4px;
+}
+
+.rf-trade-btns {
+  display : grid;
+  grid-template-columns: 1fr 1fr;
+  gap     : 10px;
+}
+
+/* ─── EVEN/ODD PCT ROW ──────────────────────────────────────────────────────── */
+.eo-pct-row { display: flex; flex-direction: column; gap: 4px; }
+
+/* ─── POSITIONS LIST ────────────────────────────────────────────────────────── */
+.positions-list {
+  display        : flex;
+  flex-direction : column;
+  gap            : 8px;
+  max-height     : 240px;
+  overflow-y     : auto;
+}
+
+.position-item {
+  display         : flex;
+  align-items     : center;
+  justify-content : space-between;
+  padding         : 8px 10px;
+  background      : var(--bg-secondary);
+  border          : 1px solid var(--border);
+  border-radius   : var(--radius-sm);
+  gap             : 8px;
+  animation       : fadeIn 0.3s ease;
+}

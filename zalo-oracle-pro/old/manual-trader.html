@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zalo Oracle Pro — Manual Trader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@300;400;500;600&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/manual-trader.css"/>
+</head>
+<body>
+
+<!-- ── NAVBAR ──────────────────────────────────────────────────────────────── -->
+<nav class="navbar">
+  <a href="dashboard.html" class="navbar-brand">
+    <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+      <polygon points="24,4 44,14 44,34 24,44 4,34 4,14" stroke="#00d4ff" stroke-width="1.5" fill="rgba(0,212,255,0.08)"/>
+      <circle cx="24" cy="24" r="5" fill="#00d4ff"/>
+    </svg>
+    <span class="brand-name">ZALO ORACLE PRO</span>
+    <span class="brand-tag">BETA</span>
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="dashboard.html"      class="nav-link">⬛ Home</a></li>
+    <li><a href="bot-settings.html"   class="nav-link">🤖 Bot Settings</a></li>
+    <li><a href="manual-trader.html"  class="nav-link active">⚡ Manual Trade</a></li>
+    <li><a href="analysis.html"       class="nav-link">🧠 Analysis</a></li>
+    <li><a href="strategies.html"     class="nav-link">📊 Strategies</a></li>
+    <li><a href="risk-calculator.html"class="nav-link">🛡️ Risk Calc</a></li>
+  </ul>
+  <div class="navbar-right">
+    <div class="balance-display">
+      <span class="balance-label">Balance</span>
+      <span class="balance-amount" data-balance>-- USD</span>
+    </div>
+    <div class="status-bar">
+      <div id="status-dot"></div>
+      <span id="status-text">Connecting...</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Exit</button>
+  </div>
+</nav>
+
+<!-- ── PAGE ─────────────────────────────────────────────────────────────────── -->
+<div class="page-wrapper">
+  <div class="page-content">
+
+    <!-- ── TOP: Market + Live Price + Stake Settings ──────────────────────── -->
+    <div class="mt-top-row">
+
+      <!-- Market & Price -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📈 Market</span>
+          <span class="badge badge-green glow-anim">● LIVE</span>
+        </div>
+        <select class="form-select" id="mt-market">
+          <optgroup label="Volatility (1s)">
+            <option value="1HZ10V">Vol 10 (1s)</option>
+            <option value="1HZ25V">Vol 25 (1s)</option>
+            <option value="1HZ50V">Vol 50 (1s)</option>
+            <option value="1HZ75V">Vol 75 (1s)</option>
+            <option value="1HZ100V">Vol 100 (1s)</option>
+          </optgroup>
+          <optgroup label="Volatility">
+            <option value="R_10">Vol 10</option>
+            <option value="R_25">Vol 25</option>
+            <option value="R_50">Vol 50</option>
+            <option value="R_75">Vol 75</option>
+            <option value="R_100" selected>Vol 100</option>
+          </optgroup>
+        </select>
+        <!-- Live price big display -->
+        <div class="mt-price-block mt-16">
+          <div class="price-display" data-price id="mt-price">---.--</div>
+          <div class="flex-between mt-8">
+            <span class="mono text-muted">Digit: <strong class="text-cyan" data-last-digit>-</strong></span>
+            <span class="mono text-muted" data-parity>-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trade Settings -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">⚙️ Trade Settings</span>
+        </div>
+        <div class="trade-settings-grid">
+          <div class="form-group">
+            <label class="form-label">Stake ($)</label>
+            <input type="number" class="form-input" id="mt-stake" value="0.50" min="0.35" step="0.01"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Duration (ticks)</label>
+            <select class="form-select" id="mt-duration">
+              <option value="1" selected>1 tick</option>
+              <option value="2">2 ticks</option>
+              <option value="3">3 ticks</option>
+              <option value="4">4 ticks</option>
+              <option value="5">5 ticks</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Martingale (x)</label>
+            <input type="number" class="form-input" id="mt-martingale" value="1.5" min="1" step="0.1"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Currency</label>
+            <input type="text" class="form-input" id="mt-currency" value="USD" readonly/>
+          </div>
+        </div>
+      </div>
+
+      <!-- Session Stats -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📊 Session</span>
+          <button class="btn btn-ghost btn-sm" id="mt-reset-btn">Reset</button>
+        </div>
+        <div class="stats-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="stat-box">
+            <span class="stat-label">Runs</span>
+            <span class="stat-value cyan" id="mt-stat-runs">0</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Won</span>
+            <span class="stat-value profit" id="mt-stat-won">0</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Lost</span>
+            <span class="stat-value loss" id="mt-stat-lost">0</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">P/L</span>
+            <span class="stat-value" id="mt-stat-pnl">+0.00</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── MAIN TRADING GRID ───────────────────────────────────────────────── -->
+    <div class="mt-main-grid mt-16">
+
+      <!-- ── PANEL 1: DIGIT / OVER-UNDER ─────────────────────────────────── -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🎯 Digit Prediction</span>
+          <span class="badge badge-cyan">Click digit to select</span>
+        </div>
+
+        <!-- Digit Circles -->
+        <div class="digit-circles" id="mt-digit-circles">
+          <!-- Generated by JS -->
+        </div>
+
+        <div class="divider mt-16"></div>
+
+        <!-- Over/Under Buttons -->
+        <div class="mt-16">
+          <span class="mono text-muted" style="font-size:0.72rem;">OVER / UNDER BARRIER: <strong class="text-gold" id="mt-barrier-display">5</strong></span>
+          <div class="ou-trade-btns mt-12">
+            <button class="btn btn-green btn-full" id="btn-over">
+              📈 Over <span id="over-pct-display">~89%</span>
+            </button>
+            <button class="btn btn-red btn-full" id="btn-under">
+              📉 Under <span id="under-pct-display">~10%</span>
+            </button>
+          </div>
+          <div class="ou-pct-bars mt-12">
+            <div class="progress-bar-wrap">
+              <span class="mono text-green" style="font-size:0.7rem;width:40px;">OVER</span>
+              <div class="progress-bar"><div class="progress-fill green" id="mt-over-bar" style="width:50%"></div></div>
+              <span class="mono text-green" id="mt-over-pct" style="font-size:0.7rem;">50%</span>
+            </div>
+            <div class="progress-bar-wrap mt-8">
+              <span class="mono text-red" style="font-size:0.7rem;width:40px;">UNDER</span>
+              <div class="progress-bar"><div class="progress-fill red" id="mt-under-bar" style="width:50%"></div></div>
+              <span class="mono text-red" id="mt-under-pct" style="font-size:0.7rem;">50%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider mt-16"></div>
+
+        <!-- Matches / Differs Buttons -->
+        <div>
+          <span class="mono text-muted" style="font-size:0.72rem;">MATCHES / DIFFERS — Selected: <strong class="text-gold" id="mt-selected-digit">None</strong></span>
+          <div class="md-trade-btns mt-12">
+            <button class="btn btn-outline btn-full" id="btn-matches">🎯 Matches</button>
+            <button class="btn btn-ghost btn-full"   id="btn-differs">↔️ Differs</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PANEL 2: EVEN/ODD + RISE/FALL ─────────────────────────────── -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">⚖️ Even / Odd</span>
+        </div>
+
+        <!-- Parity sequence -->
+        <div class="parity-row" id="mt-parity-row">
+          <!-- Generated by JS -->
+        </div>
+
+        <div class="eo-pct-row mt-12">
+          <div class="progress-bar-wrap">
+            <span class="mono text-cyan" style="font-size:0.7rem;width:40px;">EVEN</span>
+            <div class="progress-bar"><div class="progress-fill cyan" id="mt-even-bar" style="width:50%"></div></div>
+            <span class="mono text-cyan" id="mt-even-pct" style="font-size:0.7rem;">50%</span>
+          </div>
+          <div class="progress-bar-wrap mt-8">
+            <span class="mono text-gold" style="font-size:0.7rem;width:40px;">ODD</span>
+            <div class="progress-bar"><div class="progress-fill gold" id="mt-odd-bar" style="width:50%"></div></div>
+            <span class="mono text-gold" id="mt-odd-pct" style="font-size:0.7rem;">50%</span>
+          </div>
+        </div>
+
+        <!-- Even/Odd Trade Buttons -->
+        <div class="eo-trade-btns mt-16">
+          <button class="btn btn-primary btn-full" id="btn-even">
+            <span>E</span> EVEN
+          </button>
+          <button class="btn btn-gold btn-full" id="btn-odd">
+            <span>O</span> ODD
+          </button>
+        </div>
+
+        <div class="divider mt-16"></div>
+
+        <!-- Rise/Fall -->
+        <div class="card-header mt-8">
+          <span class="card-title">📈 Rise / Fall</span>
+        </div>
+
+        <!-- Rise/Fall sequence -->
+        <div class="rf-sequence mt-8" id="mt-rf-row">
+          <!-- Generated by JS -->
+        </div>
+
+        <!-- Rise/Fall Trade Buttons -->
+        <div class="rf-trade-btns mt-16">
+          <button class="btn btn-green btn-full" id="btn-rise">
+            ▲ RISE
+          </button>
+          <button class="btn btn-red btn-full" id="btn-fall">
+            ▼ FALL
+          </button>
+        </div>
+
+      </div>
+
+      <!-- ── PANEL 3: TERMINAL + POSITIONS ─────────────────────────────── -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">💻 Trade Terminal</span>
+          <button class="btn btn-ghost btn-sm" id="mt-clear-terminal">Clear</button>
+        </div>
+        <div class="terminal" id="terminal">
+          <div class="terminal-line info">[SYSTEM] Manual Trader ready...</div>
+        </div>
+
+        <div class="divider mt-16"></div>
+
+        <!-- Open Positions -->
+        <div class="card-header">
+          <span class="card-title">📋 Recent Trades</span>
+        </div>
+        <div class="positions-list mt-8" id="positions-list">
+          <div class="mono text-muted" style="font-size:0.78rem;text-align:center;padding:20px;">
+            No trades yet this session
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- ── SCRIPTS ────────────────────────────────────────────────────────────── -->
+<script src="js/utils.js"></script>
+<script src="js/deriv-api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ticks.js"></script>
+<script src="js/manual-trade.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  Auth.autoLogin();
+  ManualTrade.init();
+
+  // ── STATE ─────────────────────────────────────────────────────────────────
+  let selectedDigit = null;
+  let currentBarrier = 5;
+
+  // ── INIT DIGIT CIRCLES ────────────────────────────────────────────────────
+  const initDigitCircles = () => {
+    const c = document.getElementById('mt-digit-circles');
+    if (!c) return;
+    c.innerHTML = '';
+    for (let i = 0; i <= 9; i++) {
+      const div = document.createElement('div');
+      div.className  = 'digit-circle';
+      div.id         = `mtdc-${i}`;
+      div.style.cssText = 'width:64px;height:64px;cursor:pointer;';
+      div.innerHTML  = `<span class="digit-num">${i}</span><span class="digit-pct" id="mtdp-${i}">0%</span>`;
+      div.addEventListener('click', () => selectDigit(i));
+      c.appendChild(div);
+    }
+    // Set barrier 5 as default selected
+    selectBarrier(5);
+  };
+
+  // ── SELECT DIGIT ──────────────────────────────────────────────────────────
+  const selectDigit = (d) => {
+    selectedDigit = d;
+    document.querySelectorAll('[id^="mtdc-"]').forEach(el => el.classList.remove('selected'));
+    const el = document.getElementById(`mtdc-${d}`);
+    if (el) el.classList.add('selected');
+    document.getElementById('mt-selected-digit').textContent = d;
+    document.getElementById('mt-barrier-display').textContent = d;
+    currentBarrier = d;
+    updateOUStats();
+  };
+
+  // ── SELECT BARRIER ────────────────────────────────────────────────────────
+  const selectBarrier = (b) => {
+    currentBarrier = b;
+    selectedDigit  = b;
+    document.getElementById('mt-barrier-display').textContent = b;
+    document.getElementById('mt-selected-digit').textContent  = b;
+    document.querySelectorAll('[id^="mtdc-"]').forEach(el => el.classList.remove('selected'));
+    const el = document.getElementById(`mtdc-${b}`);
+    if (el) el.classList.add('selected');
+    updateOUStats();
+  };
+
+  // ── UPDATE DIGIT CIRCLES ──────────────────────────────────────────────────
+  const updateDigitCircles = () => {
+    const stats = Ticks.getDigitStats(100);
+    const { hot, cold } = Utils.getHotColdDigits(stats.percentages);
+    for (let i = 0; i <= 9; i++) {
+      const circle = document.getElementById(`mtdc-${i}`);
+      const pctEl  = document.getElementById(`mtdp-${i}`);
+      if (!circle || !pctEl) continue;
+      pctEl.textContent = `${stats.percentages[i]}%`;
+      circle.classList.remove('hot','cold');
+      if (i === hot)  circle.classList.add('hot');
+      if (i === cold) circle.classList.add('cold');
+    }
+  };
+
+  // ── UPDATE OVER/UNDER STATS ───────────────────────────────────────────────
+  const updateOUStats = () => {
+    const ou = Ticks.getOverUnder(currentBarrier, 100);
+    const overBar  = document.getElementById('mt-over-bar');
+    const underBar = document.getElementById('mt-under-bar');
+    const overPct  = document.getElementById('mt-over-pct');
+    const underPct = document.getElementById('mt-under-pct');
+    if (overBar)  overBar.style.width  = `${ou.overPercent}%`;
+    if (underBar) underBar.style.width = `${ou.underPercent}%`;
+    if (overPct)  overPct.textContent  = `${ou.overPercent}%`;
+    if (underPct) underPct.textContent = `${ou.underPercent}%`;
+    document.getElementById('over-pct-display').textContent  = `${ou.overPercent}%`;
+    document.getElementById('under-pct-display').textContent = `${ou.underPercent}%`;
+  };
+
+  // ── UPDATE EVEN/ODD ───────────────────────────────────────────────────────
+  const updateEvenOdd = () => {
+    const eo = Ticks.getEvenOdd(100);
+    document.getElementById('mt-even-bar').style.width = `${eo.evenPercent}%`;
+    document.getElementById('mt-odd-bar').style.width  = `${eo.oddPercent}%`;
+    document.getElementById('mt-even-pct').textContent  = `${eo.evenPercent}%`;
+    document.getElementById('mt-odd-pct').textContent   = `${eo.oddPercent}%`;
+
+    // Parity row last 10
+    const row = document.getElementById('mt-parity-row');
+    if (row) {
+      row.innerHTML = Ticks.getLastN(10).map(price => {
+        const d = Utils.getLastDigit(price);
+        const t = Utils.isEven(d) ? 'even' : 'odd';
+        return `<div class="parity-badge ${t}">${t[0].toUpperCase()}</div>`;
+      }).join('');
+    }
+  };
+
+  // ── UPDATE RISE/FALL SEQUENCE ─────────────────────────────────────────────
+  const updateRisefall = () => {
+    const ticks = Ticks.getLastN(10);
+    const row   = document.getElementById('mt-rf-row');
+    if (!row || ticks.length < 2) return;
+    row.innerHTML = ticks.map((price, i) => {
+      if (i === 0) return '';
+      const dir = price > ticks[i-1] ? 'rise' : price < ticks[i-1] ? 'fall' : 'flat';
+      const cls = dir === 'rise' ? 'badge-green' : dir === 'fall' ? 'badge-red' : 'badge-cyan';
+      return `<span class="badge ${cls}" style="margin:2px;">${dir === 'rise' ? '▲' : dir === 'fall' ? '▼' : '—'}</span>`;
+    }).join('');
+  };
+
+  // ── ADD TRADE TO POSITIONS LIST ───────────────────────────────────────────
+  const addToPositionsList = (trade) => {
+    const list = document.getElementById('positions-list');
+    if (!list) return;
+    const item = document.createElement('div');
+    item.className = 'position-item';
+    item.innerHTML = `
+      <span class="mono text-muted" style="font-size:0.7rem;">${trade.time}</span>
+      <span class="badge badge-cyan" style="font-size:0.68rem;">${trade.type}</span>
+      <span class="mono text-gold" style="font-size:0.78rem;">$${trade.buyPrice.toFixed(2)}</span>
+      <span class="badge badge-green" style="font-size:0.68rem;">OPEN</span>`;
+    list.prepend(item);
+    // Remove placeholder
+    const placeholder = list.querySelector('.mono.text-muted');
+    if (list.children.length > 1 && placeholder) placeholder.remove();
+  };
+
+  // ── GET TRADE PARAMS ──────────────────────────────────────────────────────
+  const getParams = (contractType, barrier) => ({
+    symbol       : document.getElementById('mt-market').value,
+    contractType,
+    duration     : parseInt(document.getElementById('mt-duration').value),
+    stake        : parseFloat(document.getElementById('mt-stake').value),
+    barrier      : barrier !== undefined ? barrier : undefined,
+  });
+
+  // ── WIRE UP TRADE BUTTONS ─────────────────────────────────────────────────
+  document.getElementById('btn-over').addEventListener('click', () => {
+    ManualTrade.buy(getParams('DIGITOVER', currentBarrier));
+  });
+
+  document.getElementById('btn-under').addEventListener('click', () => {
+    ManualTrade.buy(getParams('DIGITUNDER', currentBarrier));
+  });
+
+  document.getElementById('btn-even').addEventListener('click', () => {
+    ManualTrade.buy(getParams('DIGITEVEN'));
+  });
+
+  document.getElementById('btn-odd').addEventListener('click', () => {
+    ManualTrade.buy(getParams('DIGITODD'));
+  });
+
+  document.getElementById('btn-matches').addEventListener('click', () => {
+    if (selectedDigit === null) { Utils.toast('Select a digit first', 'warning'); return; }
+    ManualTrade.buy(getParams('DIGITMATCH', selectedDigit));
+  });
+
+  document.getElementById('btn-differs').addEventListener('click', () => {
+    if (selectedDigit === null) { Utils.toast('Select a digit first', 'warning'); return; }
+    ManualTrade.buy(getParams('DIGITDIFF', selectedDigit));
+  });
+
+  document.getElementById('btn-rise').addEventListener('click', () => {
+    ManualTrade.buy(getParams('CALL'));
+  });
+
+  document.getElementById('btn-fall').addEventListener('click', () => {
+    ManualTrade.buy(getParams('PUT'));
+  });
+
+  // ── RESET STATS ───────────────────────────────────────────────────────────
+  document.getElementById('mt-reset-btn').addEventListener('click', () => {
+    ManualTrade.resetStats();
+    document.getElementById('positions-list').innerHTML =
+      '<div class="mono text-muted" style="font-size:0.78rem;text-align:center;padding:20px;">No trades yet this session</div>';
+    Utils.toast('Session reset', 'info');
+  });
+
+  // ── CLEAR TERMINAL ────────────────────────────────────────────────────────
+  document.getElementById('mt-clear-terminal').addEventListener('click', () => {
+    document.getElementById('terminal').innerHTML =
+      '<div class="terminal-line info">[SYSTEM] Terminal cleared.</div>';
+  });
+
+  // ── MARKET CHANGE ─────────────────────────────────────────────────────────
+  document.getElementById('mt-market').addEventListener('change', (e) => {
+    Ticks.changeMarket(e.target.value);
+  });
+
+  // ── ON LOGIN ──────────────────────────────────────────────────────────────
+  Auth.onLogin((account) => {
+    const curr = document.getElementById('mt-currency');
+    if (curr) curr.value = account.currency || 'USD';
+    Ticks.subscribe(document.getElementById('mt-market').value);
+    initDigitCircles();
+  });
+
+  // ── ON TICK ───────────────────────────────────────────────────────────────
+  Ticks.onTick(Utils.throttle(() => {
+    updateDigitCircles();
+    updateEvenOdd();
+    updateRisefall();
+    updateOUStats();
+  }, 200));
+
+  // ── ON TRADE PLACED ───────────────────────────────────────────────────────
+  ManualTrade.onTrade(addToPositionsList);
+
+});
+</script>
+
+</body>
+</html>

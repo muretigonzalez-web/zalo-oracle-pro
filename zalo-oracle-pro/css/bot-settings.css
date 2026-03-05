@@ -1,0 +1,48 @@
+/* ZALO ORACLE PRO — bot-settings.css */
+
+.bot-status-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
+
+.bot-main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+@media (max-width: 900px) { .bot-main-grid { grid-template-columns: 1fr; } }
+
+.config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 600px) { .config-grid { grid-template-columns: 1fr; } }
+
+/* MARTINGALE PREVIEW */
+.martingale-preview { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; }
+.martingale-steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); gap: 7px; }
+.mart-step { display: flex; flex-direction: column; align-items: center; gap: 3px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 7px 5px; text-align: center; }
+
+/* RISK GRID */
+.risk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.risk-item { display: flex; align-items: center; gap: 9px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 11px; }
+.risk-icon { font-size: 1.1rem; flex-shrink: 0; }
+
+/* P/L PROGRESS BAR */
+.pnl-track { position: relative; height: 10px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+.pnl-fill  { position: absolute; top: 0; height: 100%; border-radius: 5px; transition: all 0.5s ease; background: var(--green); }
+.pnl-center-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--border-light); transform: translateX(-50%); }
+
+.bot-right-panel { display: flex; flex-direction: column; gap: 0; }
+.bot-config-panel { display: flex; flex-direction: column; }
+
+/* COMPONENTS / PRESETS */
+@keyframes toastSlideIn { from { opacity:0; transform:translateX(36px); } to { opacity:1; transform:translateX(0); } }
+
+.preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.preset-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: var(--transition); text-decoration: none; }
+.preset-card:hover { border-color: var(--cyan); background: var(--cyan-dim); transform: translateY(-2px); }
+.preset-card .preset-icon { font-size: 1.7rem; margin-bottom: 7px; display: block; }
+.preset-card .preset-name { font-family: var(--font-display); font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
+.preset-card .preset-desc { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
+
+.input-stepper { display: flex; gap: 0; }
+.input-stepper .form-input { border-radius: 0; text-align: center; flex: 1; }
+.step-btn { width: 34px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); font-size: 1rem; cursor: pointer; transition: var(--transition-fast); display: flex; align-items: center; justify-content: center; }
+.step-btn:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.step-btn:last-child  { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.step-btn:hover { color: var(--cyan); background: var(--cyan-dim); }
+
+.market-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; background: var(--bg-card); border: 1px solid var(--border); font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-secondary); cursor: pointer; transition: var(--transition-fast); }
+.market-pill:hover, .market-pill.active { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
+.market-pill .market-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }

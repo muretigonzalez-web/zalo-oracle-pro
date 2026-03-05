@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zalo Oracle Pro — Strategies</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@300;400;500;600&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/strategies.css"/>
+</head>
+<body>
+
+<!-- ── NAVBAR ──────────────────────────────────────────────────────────────── -->
+<nav class="navbar">
+  <a href="dashboard.html" class="navbar-brand">
+    <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+      <polygon points="24,4 44,14 44,34 24,44 4,34 4,14" stroke="#00d4ff" stroke-width="1.5" fill="rgba(0,212,255,0.08)"/>
+      <circle cx="24" cy="24" r="5" fill="#00d4ff"/>
+    </svg>
+    <span class="brand-name">ZALO ORACLE PRO</span>
+    <span class="brand-tag">BETA</span>
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="dashboard.html"       class="nav-link">⬛ Home</a></li>
+    <li><a href="bot-settings.html"    class="nav-link">🤖 Bot Settings</a></li>
+    <li><a href="manual-trader.html"   class="nav-link">⚡ Manual Trade</a></li>
+    <li><a href="analysis.html"        class="nav-link">🧠 Analysis</a></li>
+    <li><a href="strategies.html"      class="nav-link active">📊 Strategies</a></li>
+    <li><a href="risk-calculator.html" class="nav-link">🛡️ Risk Calc</a></li>
+  </ul>
+  <div class="navbar-right">
+    <div class="balance-display">
+      <span class="balance-label">Balance</span>
+      <span class="balance-amount" data-balance>-- USD</span>
+    </div>
+    <div class="status-bar">
+      <div id="status-dot"></div>
+      <span id="status-text">Connecting...</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Exit</button>
+  </div>
+</nav>
+
+<!-- ── PAGE ─────────────────────────────────────────────────────────────────── -->
+<div class="page-wrapper">
+  <div class="page-content">
+
+    <!-- ── HEADER ─────────────────────────────────────────────────────────── -->
+    <div class="strat-header">
+      <div>
+        <h2>📊 Trading Strategies</h2>
+        <p>Click any strategy card to load it into Bot Settings</p>
+      </div>
+      <div class="flex flex-gap-8">
+        <div class="tabs" style="background:transparent;border:none;padding:0;">
+          <button class="tab-btn active" data-filter="all">All</button>
+          <button class="tab-btn" data-filter="digit">Digit</button>
+          <button class="tab-btn" data-filter="parity">Parity</button>
+          <button class="tab-btn" data-filter="direction">Direction</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STRATEGY CARDS GRID ────────────────────────────────────────────── -->
+    <div class="strat-grid mt-16" id="strat-grid">
+
+      <!-- 1. Even/Odd Streak Hunter -->
+      <div class="strat-card" data-category="parity" data-config='{"contractType":"DIGITEVEN","stake":0.50,"martingale":1.5,"maxMartingale":5,"takeProfit":10,"stopLoss":5}'>
+        <div class="strat-card-header">
+          <div class="strat-icon">⚖️</div>
+          <div>
+            <div class="strat-name">Even Streak Hunter</div>
+            <span class="badge badge-cyan">Parity</span>
+          </div>
+          <span class="strat-risk low">LOW RISK</span>
+        </div>
+        <div class="strat-rules">
+          <div class="strat-rule"><strong>Contract:</strong> EVEN</div>
+          <div class="strat-rule"><strong>Entry:</strong> After 3+ consecutive ODD results</div>
+          <div class="strat-rule"><strong>Stake:</strong> 1–2% of capital</div>
+          <div class="strat-rule"><strong>Martingale:</strong> x1.5 up to 5 steps</div>
+          <div class="strat-rule"><strong>Take Profit:</strong> 20% of capital</div>
+          <div class="strat-rule"><strong>Stop Loss:</strong> 10% of capital</div>
+        </div>
+        <div class="strat-description mt-12">
+          Wait for 3+ odd results in a row — then bet EVEN with martingale recovery.
+          Statistical reversion tends to favor EVEN after long ODD streaks.
+        </div>
+        <div class="strat-footer mt-12">
+          <div class="strat-winrate">
+            <span class="mono text-muted" style="font-size:0.68rem;">EST. WIN RATE</span>
+            <div class="progress-bar mt-4"><div class="progress-fill cyan" style="width:52%;"></div></div>
+            <span class="mono text-cyan" style="font-size:0.72rem;">~52%</span>
+          </div>
+          <button class="btn btn-primary btn-sm strat-load-btn">Load Strategy</button>
+        </div>
+      </div>
+
+      <!-- 2. Odd Revenge -->
+      <div class="strat-card" data-category="parity" data-config='{"contractType":"DIGITODD","stake":0.50,"martingale":1.5,"maxMartingale":5,"takeProfit":10,"stopLoss":5}'>
+        <div class="strat-card-header">
+          <div class="strat-icon">🔁</div>
+          <div>
+            <div class="strat-name">Odd Revenge</div>
+            <span class="badge badge-gold">Parity</span>
+          </div>
+          <span class="strat-risk low">LOW RISK</span>
+        </div>
+        <div class="strat-rules">
+          <div class="strat-rule"><strong>Contract:</strong> ODD</div>
+          <div class="strat-rule"><strong>Entry:</strong> After 3+ consecutive EVEN results</div>
+          <div class="strat-rule"><strong>Stake:</strong> 1–2% of capital</div>
+          <div class="strat-rule"><strong>Martingale:</strong> x1.5 up to 5 steps</div>
+          <div class="strat-rule"><strong>Take Profit:</strong> 20% of capital</div>
+          <div class="strat-rule"><strong>Stop Loss:</strong> 10% of capital</div>
+        </div>
+        <div class="strat-description mt-12">
+          Mirror of Even Streak Hunter. Enter ODD after 3+ consecutive EVEN results
+          to capitalize on statistical reversion.
+        </div>
+        <div class="strat-footer mt-12">
+          <div class="strat-winrate">
+            <span class="mono text-muted" style="font-size:0.68rem;">EST. WIN RATE</span>
+            <div class="progress-bar mt-4"><div class="progress-fill gold" style="width:52%;"></div></div>
+            <span class="mono text-gold" style="font-size:0.72rem;">~52%</span>
+          </div>
+          <button class="btn btn-gold btn-sm strat-load-btn">Load Strategy</button>
+        </div>
+      </div>
+
+      <!-- 3. Over 5 Aggressor -->
+      <div class="strat-card" data-category="digit" data-config='{"contractType":"DIGITOVER","barrier":4,"stake":0.50,"martingale":2.0,"maxMartingale":4,"takeProfit":15,"stopLoss":7}'>
+        <div class="strat-card-header">
+          <div class="strat-icon">📈</div>
+          <div>
+            <div class="strat-name">Over 4 Aggressor</div>
+            <span class="badge badge-green">Digit</span>
+          </div>
+          <span class="strat-risk medium">MED RISK</span>
+        </div>
+        <div class="strat-rules">
+          <div class="strat-rule"><strong>Contract:</strong> OVER 4</div>
+          <div class="strat-rule"><strong>Entry:</strong> Any time — digits 5,6,7,8,9 win</div>
+          <div class="strat-rule"><strong>Stake:</strong> 2–3% of capital</div>
+          <div class="strat-rule"><strong>Martingale:</strong> x2.0 up to 4 steps</div>
+          <div class="strat-rule"><strong>Take Profit:</strong> 30% of capital</div>
+          <div class="strat-rule"><strong>Stop Loss:</strong> 15% of capital</div>
+        </div>
+        <div class="strat-description mt-12">
+          Barrier 4 means digits 5–9 win (50% probability). Higher payout vs Even/Odd.
+          Aggressive martingale for quick recovery.
+        </div>
+        <div class="strat-footer mt-12">
+          <div class="strat-winrate">
+            <span class="mono text-muted" style="font-size:0.68rem;">EST. WIN RATE</span>
+            <div class="progress-bar mt-4"><div class="progress-fill green" style="width:50%;"></div></div>
+            <span class="mono text-green" style="font-size:0.72rem;">~50%</span>
+          </div>
+          <button class="btn btn-green btn-sm strat-load-btn">Load Strategy</button>
+        </div>
+      </div>
+
+      <!-- 4. Under 5 Sniper -->
+      <div class="strat-card" data-category="digit" data-config='{"contractType":"DIGITUNDER","barrier":5,"stake":0.50,"martingale":2.0,"maxMartingale":4,"takeProfit":15,"stopLoss":7}'>
+        <div class="strat-card-header">
+          <div class="strat-icon">📉</div>
+          <div>
+            <div class="strat-name">Under 5 Sniper</div>
+            <span class="badge badge-green">Digit</span>
+          </div>
+          <span class="strat-risk medium">MED RISK</span>
+        </div>
+        <div class="strat-rules">
+          <div class="strat-rule"><strong>Contract:</strong> UNDER 5</div>
+          <div class="strat-rule"><strong>Entry:</strong> When over-5 streak > 3</div>
+          <div class="strat-rule"><strong>Stake:</strong> 2–3% of capital</div>
+          <div class="strat-rule"><strong>Martingale:</strong> x2.0 up to 4 steps</div>
+          <div class="strat-rule"><strong>Take Profit:</strong> 30% of capital</div>
+          <div class="strat-rule"><strong>Stop Loss:</strong> 15% of capital</div>
+        </div>
+        <div class="strat-description mt-12">
+          Wait for a run of high digits (5–9) then bet UNDER 5. Digits 0–4 win.
+          Uses streak reversion logic for timing entries.
+        </div>
+        <div class="strat-footer mt-12">
+          <div class="strat-winrate">
+            <span class="mono text-muted" style="font-size:0.68rem;">EST. WIN RATE</span>
+            <div class="progress-bar mt-4"><div class="progress-fill green" style="width:50%;"></div></div>
+            <span class="mono text-green" style="font-size:0.72rem;">~50%</span>
+          </div>
+          <button class="btn btn-green btn-sm strat-load-btn">Load Strategy</button>
+        </div>
+      </div>
+
+      <!-- 5. Cold Digit Differs -->
+      <div class="strat-card" data-category="digit" data-config='{"contractType":"DIGITDIFF","barrier":0,"stake":0.35,"martingale":1.5,"maxMartingale":6,"takeProfit":8,"stopLoss":4}'>
+        <div class="strat-card-header">
+          <div class="strat-icon">❄️</div>
+          <div>
+            <div class="strat-name">Cold Digit Differs</div>
+            <span class="badge badge-cyan">Digit</span>
+          </div>
+          <span class="strat-risk low">LOW RISK</span>
+        </div>
+        <div class="strat-rules">
+          <div class="strat-rule"><strong>Contract:</strong> DIFFERS (from cold digit)</div>
+          <div class="strat-rule"><strong>Entry:</strong> Check analysis — pick the cold digit</div>
+          <div class="strat-rule"><strong>Stake:</strong> Min stake (high win rate)</div>
+          <div class="strat-rule"><strong>Martingale:</strong> x1.5 up to 6 steps</div>
+          <div class="strat-rule"><strong>Take Profit:</strong> 15% of capital</div>
+          <div class="strat-rule"><strong>Stop Loss:</strong> 8% of capital</div>
+        </div>
+        <div class="strat-description mt-12">
+          The DIFFERS contract wins 90% of the time (any digit except your pick).
+          Use the Analysis page to find the COLD (least frequent) digit then bet DIFFERS from it.
+        </div>
+        <div class="strat-footer mt-12">
+          <div class="strat-winrate">
+            <span class="mono text-muted" style="font-size:0.68rem;">EST. WIN RATE</span>
+            <div class="progress-bar mt-4"><div class="progress-fill cyan" style="width:90%;"></div></div>
+            <span class="mono text-cyan" style="font-size:0.72rem;">~90%</span>
+          </div>
+          <button class="btn btn-primary btn-sm strat-load-btn">Load Strategy</button>
+        </div>
+      </div>
+
+      <!-- 6. Hot Digit Matches -->
+      <div class="strat-card" data-category="digit" data-config='{"contractType":"DIGITMATCH","barrier":0,"stake":0.35,"martingale":3.0,"maxMartingale":3,"takeProfit":20,"stopLoss":5}'>
+        <div class="strat-card-header">
+          <div class="strat-icon">🔥</div>
+          <div>
+            <div class="strat-name">Hot Digit Matches</div>
+            <span class="badge badge-red">Digit</span>
+          </div>
+          <span class="strat-risk high">HIGH RISK</span>
+        </div>
+        <div class="strat-rules">
+          <div class="strat-rule"><strong>Contract:</strong> MATCHES (hot digit)</div>
+          <div class="strat-rule"><strong>Entry:</strong> Check analysis — pick the HOT digit</div>
+          <div class="strat-rule"><strong>Stake:</strong> Min stake — low win rate but high payout</div>
+          <div class="strat-rule"><strong>Martingale:</strong> x3.0 up to 3 steps</div>
+          <div class="strat-rule"><strong>Take Profit:</strong> 40% of capital</div>
+          <div class="strat-rule"><strong>Stop Loss:</strong> 10% of capital</div>
+        </div>
+        <div class="strat-description mt-12">
+          MATCHES wins ~10% of the time but pays ~8x. Use the HOT digit from Analysis.
+          High risk — small position size essential. One hit can cover many losses.
+        </div>
+        <div class="strat-footer mt-12">
+          <div class="strat-winrate">
+            <span class="mono text-muted" style="font-size:0.68rem;">EST. WIN RATE</span>
+            <div class="progress-bar mt-4"><div class="progress-fill red" style="width:10%;"></div></div>
+            <span class="mono text-red" style="font-size:0.72rem;">~10%</span>
+          </div>
+          <button class="btn btn-red btn-sm strat-load-btn">Load Strategy</button>
+        </div>
+      </div>
+
+      <!-- 7. Conservative Rise/Fall -->
+      <div class="strat-card" data-category="direction" data-config='{"contractType":"CALL","stake":0.50,"martingale":1.5,"maxMartingale":5,"takeProfit":10,"stopLoss":5}'>
+        <div class="strat-card-header">
+          <div class="strat-icon">▲</div>
+          <div>
+            <div class="strat-name">Conservative Rise</div>
+            <span class="badge badge-green">Direction</span>
+          </div>
+          <span class="strat-risk low">LOW RISK</span>
+        </div>
+        <div class="strat-rules">
+          <div class="strat-rule"><strong>Contract:</strong> RISE (Call)</div>
+          <div class="strat-rule"><strong>Entry:</strong> After 3+ consecutive FALL ticks</div>
+          <div class="strat-rule"><strong>Stake:</strong> 1–2% of capital</div>
+          <div class="strat-rule"><strong>Martingale:</strong> x1.5 up to 5 steps</div>
+          <div class="strat-rule"><strong>Take Profit:</strong> 20% of capital</div>
+          <div class="strat-rule"><strong>Stop Loss:</strong> 10% of capital</div>
+        </div>
+        <div class="strat-description mt-12">
+          Bet on price rising after a run of 3+ falling ticks. Uses direction reversion.
+          Safest directional strategy due to low martingale multiplier.
+        </div>
+        <div class="strat-footer mt-12">
+          <div class="strat-winrate">
+            <span class="mono text-muted" style="font-size:0.68rem;">EST. WIN RATE</span>
+            <div class="progress-bar mt-4"><div class="progress-fill green" style="width:51%;"></div></div>
+            <span class="mono text-green" style="font-size:0.72rem;">~51%</span>
+          </div>
+          <button class="btn btn-green btn-sm strat-load-btn">Load Strategy</button>
+        </div>
+      </div>
+
+      <!-- 8. Turbo Over 2 -->
+      <div class="strat-card" data-category="digit" data-config='{"contractType":"DIGITOVER","barrier":2,"stake":0.35,"martingale":1.2,"maxMartingale":8,"takeProfit":8,"stopLoss":4}'>
+        <div class="strat-card-header">
+          <div class="strat-icon">⚡</div>
+          <div>
+            <div class="strat-name">Turbo Over 2</div>
+            <span class="badge badge-gold">Digit</span>
+          </div>
+          <span class="strat-risk low">LOW RISK</span>
+        </div>
+        <div class="strat-rules">
+          <div class="strat-rule"><strong>Contract:</strong> OVER 2</div>
+          <div class="strat-rule"><strong>Entry:</strong> Any time — digits 3–9 win (70% chance)</div>
+          <div class="strat-rule"><strong>Stake:</strong> Min stake</div>
+          <div class="strat-rule"><strong>Martingale:</strong> x1.2 gentle recovery</div>
+          <div class="strat-rule"><strong>Take Profit:</strong> 15% of capital</div>
+          <div class="strat-rule"><strong>Stop Loss:</strong> 8% of capital</div>
+        </div>
+        <div class="strat-description mt-12">
+          High probability (70%) contract. Low payout but very consistent.
+          Gentle martingale x1.2 keeps loss exposure minimal. Good for beginners.
+        </div>
+        <div class="strat-footer mt-12">
+          <div class="strat-winrate">
+            <span class="mono text-muted" style="font-size:0.68rem;">EST. WIN RATE</span>
+            <div class="progress-bar mt-4"><div class="progress-fill gold" style="width:70%;"></div></div>
+            <span class="mono text-gold" style="font-size:0.72rem;">~70%</span>
+          </div>
+          <button class="btn btn-gold btn-sm strat-load-btn">Load Strategy</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── STRATEGY LOAD MODAL ─────────────────────────────────────────────── -->
+    <div class="modal-overlay hidden" id="strat-modal">
+      <div class="modal">
+        <div class="modal-title" id="modal-title">Load Strategy</div>
+        <p class="mono" style="font-size:0.78rem;color:var(--text-muted);margin-bottom:16px;">
+          Adjust parameters before loading to Bot Settings
+        </p>
+        <div class="modal-fields">
+          <div class="form-group">
+            <label class="form-label">Market</label>
+            <select class="form-select" id="modal-symbol">
+              <option value="1HZ10V">Vol 10 (1s)</option>
+              <option value="1HZ25V">Vol 25 (1s)</option>
+              <option value="1HZ50V">Vol 50 (1s)</option>
+              <option value="1HZ75V">Vol 75 (1s)</option>
+              <option value="1HZ100V">Vol 100 (1s)</option>
+              <option value="R_10">Vol 10</option>
+              <option value="R_25">Vol 25</option>
+              <option value="R_50">Vol 50</option>
+              <option value="R_75">Vol 75</option>
+              <option value="R_100">Vol 100</option>
+            </select>
+          </div>
+          <div class="modal-grid">
+            <div class="form-group">
+              <label class="form-label">Stake ($)</label>
+              <input type="number" class="form-input" id="modal-stake" value="0.50" min="0.35" step="0.01"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Take Profit ($)</label>
+              <input type="number" class="form-input" id="modal-tp" value="10" min="1" step="0.5"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Stop Loss ($)</label>
+              <input type="number" class="form-input" id="modal-sl" value="5" min="1" step="0.5"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Martingale (x)</label>
+              <input type="number" class="form-input" id="modal-mart" value="1.5" min="1" step="0.1"/>
+            </div>
+          </div>
+        </div>
+        <div class="flex flex-gap-8 mt-24">
+          <button class="btn btn-primary btn-full" id="modal-confirm-btn">
+            ⚡ Load into Bot Settings
+          </button>
+          <button class="btn btn-ghost" id="modal-cancel-btn" style="min-width:100px;">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STRATEGY TIPS ──────────────────────────────────────────────────── -->
+    <div class="card mt-24">
+      <div class="card-header">
+        <span class="card-title">💡 Strategy Tips</span>
+      </div>
+      <div class="tips-grid">
+        <div class="tip-item">
+          <span class="tip-icon">📊</span>
+          <div>
+            <div class="tip-title">Always check Analysis first</div>
+            <div class="tip-desc">Before running any strategy, check the Analysis page for current digit distribution, streaks and even/odd balance.</div>
+          </div>
+        </div>
+        <div class="tip-item">
+          <span class="tip-icon">💰</span>
+          <div>
+            <div class="tip-title">Never risk more than 10% per session</div>
+            <div class="tip-desc">Set your Stop Loss at 10% of capital. Use the Risk Calculator to determine the exact dollar amount based on your balance.</div>
+          </div>
+        </div>
+        <div class="tip-item">
+          <span class="tip-icon">🔄</span>
+          <div>
+            <div class="tip-title">Martingale is a recovery tool, not a strategy</div>
+            <div class="tip-desc">Martingale only recovers losses. It does not improve win rate. Always cap your martingale steps and buffer accordingly.</div>
+          </div>
+        </div>
+        <div class="tip-item">
+          <span class="tip-icon">⏸️</span>
+          <div>
+            <div class="tip-title">Stop after Take Profit, restart fresh</div>
+            <div class="tip-desc">Once Take Profit is hit, stop the bot. Reset session stats and restart fresh. Chasing more profit after TP leads to giving back gains.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── SCRIPTS ────────────────────────────────────────────────────────────── -->
+<script src="js/utils.js"></script>
+<script src="js/deriv-api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  Auth.autoLogin();
+
+  let selectedConfig = null;
+
+  // ── FILTER TABS ───────────────────────────────────────────────────────────
+  document.querySelectorAll('[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filter = btn.dataset.filter;
+      document.querySelectorAll('.strat-card').forEach(card => {
+        const show = filter === 'all' || card.dataset.category === filter;
+        card.style.display = show ? 'flex' : 'none';
+      });
+    });
+  });
+
+  // ── LOAD STRATEGY BUTTONS ─────────────────────────────────────────────────
+  document.querySelectorAll('.strat-load-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const card = e.target.closest('.strat-card');
+      selectedConfig = JSON.parse(card.dataset.config);
+      const name = card.querySelector('.strat-name').textContent;
+
+      // Populate modal
+      document.getElementById('modal-title').textContent   = `Load: ${name}`;
+      document.getElementById('modal-stake').value = selectedConfig.stake;
+      document.getElementById('modal-tp').value    = selectedConfig.takeProfit;
+      document.getElementById('modal-sl').value    = selectedConfig.stopLoss;
+      document.getElementById('modal-mart').value  = selectedConfig.martingale;
+
+      document.getElementById('strat-modal').classList.remove('hidden');
+    });
+  });
+
+  // ── MODAL CANCEL ──────────────────────────────────────────────────────────
+  document.getElementById('modal-cancel-btn').addEventListener('click', () => {
+    document.getElementById('strat-modal').classList.add('hidden');
+  });
+
+  document.getElementById('strat-modal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('strat-modal')) {
+      document.getElementById('strat-modal').classList.add('hidden');
+    }
+  });
+
+  // ── MODAL CONFIRM — SAVE AND GO TO BOT SETTINGS ───────────────────────────
+  document.getElementById('modal-confirm-btn').addEventListener('click', () => {
+    const finalConfig = {
+      ...selectedConfig,
+      symbol      : document.getElementById('modal-symbol').value,
+      stake       : parseFloat(document.getElementById('modal-stake').value),
+      takeProfit  : parseFloat(document.getElementById('modal-tp').value),
+      stopLoss    : parseFloat(document.getElementById('modal-sl').value),
+      martingale  : parseFloat(document.getElementById('modal-mart').value),
+    };
+
+    // Save to localStorage so bot-settings.html can pick it up
+    localStorage.setItem('zalo_pending_strategy', JSON.stringify(finalConfig));
+    Utils.toast('Strategy loaded! Redirecting to Bot Settings...', 'success');
+
+    setTimeout(() => {
+      window.location.href = 'bot-settings.html';
+    }, 1200);
+  });
+
+  // ── LOAD PENDING STRATEGY ON BOT-SETTINGS ─────────────────────────────────
+  // (This runs on bot-settings.html if strategy was passed)
+  const pending = localStorage.getItem('zalo_pending_strategy');
+  if (pending && window.location.href.includes('bot-settings')) {
+    const cfg = JSON.parse(pending);
+    localStorage.removeItem('zalo_pending_strategy');
+    // Map config to form fields
+    const map = {
+      'bot-symbol'         : cfg.symbol,
+      'bot-contract-type'  : cfg.contractType,
+      'bot-stake'          : cfg.stake,
+      'bot-take-profit'    : cfg.takeProfit,
+      'bot-stop-loss'      : cfg.stopLoss,
+      'bot-martingale'     : cfg.martingale,
+      'bot-max-martingale' : cfg.maxMartingale || 5,
+    };
+    Object.entries(map).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    });
+    if (cfg.barrier !== undefined) {
+      const b = document.getElementById('bot-barrier');
+      if (b) b.value = cfg.barrier;
+    }
+  }
+
+});
+</script>
+
+</body>
+</html>
