@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zalo Oracle Pro — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@300;400;500;600&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/dashboard.css"/>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="dashboard.html" class="navbar-brand">
+    <svg width="30" height="30" viewBox="0 0 48 48" fill="none">
+      <polygon points="24,3 45,13.5 45,34.5 24,45 3,34.5 3,13.5" stroke="#00d4ff" stroke-width="1.5" fill="rgba(0,212,255,0.08)"/>
+      <circle cx="24" cy="24" r="5" fill="#00d4ff"/>
+    </svg>
+    <span class="brand-name">ZALO ORACLE PRO</span>
+    <span class="brand-tag">BETA</span>
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="dashboard.html"      class="nav-link active">⬛ Home</a></li>
+    <li><a href="bot-settings.html"   class="nav-link">🤖 Bot</a></li>
+    <li><a href="manual-trader.html"  class="nav-link">⚡ Manual</a></li>
+    <li><a href="analysis.html"       class="nav-link">🧠 Analysis</a></li>
+    <li><a href="strategies.html"     class="nav-link">📊 Strategies</a></li>
+    <li><a href="risk-calculator.html"class="nav-link">🛡️ Risk</a></li>
+  </ul>
+  <div class="navbar-right">
+    <div class="balance-display">
+      <span class="balance-label">Balance</span>
+      <span class="balance-amount" data-balance>-- USD</span>
+    </div>
+    <div class="status-bar">
+      <div id="status-dot"></div>
+      <span id="status-text">Connecting...</span>
+    </div>
+    <button class="btn-run" id="run-btn">
+      <span id="run-icon">▶</span>
+      <span id="run-text">RUN</span>
+    </button>
+    <button class="btn btn-ghost btn-sm" id="logout-btn">Exit</button>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="page-content">
+
+    <!-- TOP ROW: Market + Price + Account -->
+    <div class="top-row">
+
+      <div class="market-selector-wrap card">
+        <div class="card-header">
+          <span class="card-title">📈 Market</span>
+          <span class="badge badge-green live-dot">● LIVE</span>
+        </div>
+        <select class="form-select" id="market-select">
+          <optgroup label="Volatility (1s)">
+            <option value="1HZ10V">Volatility 10 (1s)</option>
+            <option value="1HZ25V">Volatility 25 (1s)</option>
+            <option value="1HZ50V">Volatility 50 (1s)</option>
+            <option value="1HZ75V">Volatility 75 (1s)</option>
+            <option value="1HZ100V">Volatility 100 (1s)</option>
+          </optgroup>
+          <optgroup label="Volatility">
+            <option value="R_10">Volatility 10</option>
+            <option value="R_25">Volatility 25</option>
+            <option value="R_50">Volatility 50</option>
+            <option value="R_75">Volatility 75</option>
+            <option value="R_100">Volatility 100</option>
+          </optgroup>
+          <optgroup label="Boom &amp; Crash">
+            <option value="BOOM300N">Boom 300</option>
+            <option value="BOOM500">Boom 500</option>
+            <option value="BOOM1000">Boom 1000</option>
+            <option value="CRASH300N">Crash 300</option>
+            <option value="CRASH500">Crash 500</option>
+            <option value="CRASH1000">Crash 1000</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="stpRNG">Step Index</option>
+            <option value="RNGBRNK100">Range Break 100</option>
+            <option value="RNGBRNK200">Range Break 200</option>
+          </optgroup>
+        </select>
+        <div class="account-grid mt-12">
+          <div class="account-row">
+            <span class="mono text-muted" style="font-size:0.72rem;">Login ID</span>
+            <span class="mono text-cyan" style="font-size:0.78rem;" data-loginid>--</span>
+          </div>
+          <div class="account-row">
+            <span class="mono text-muted" style="font-size:0.72rem;">Currency</span>
+            <span class="mono text-gold" style="font-size:0.78rem;" data-currency>--</span>
+          </div>
+          <div class="account-row">
+            <span class="mono text-muted" style="font-size:0.72rem;">Balance</span>
+            <span class="mono text-green" style="font-size:0.78rem;" data-balance>--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Price -->
+      <div class="live-price-card card card-cyan">
+        <div class="card-header">
+          <span class="card-title">💹 Live Price</span>
+          <div class="flex flex-gap-8">
+            <span class="mono text-muted" style="font-size:0.7rem;" id="tick-count">Ticks: 0</span>
+            <span class="badge badge-green live-dot">●</span>
+          </div>
+        </div>
+        <div class="price-display" data-price id="live-price">---.--</div>
+        <div class="flex-between mt-8">
+          <span class="mono text-muted" style="font-size:0.76rem;">Last Digit: <strong class="text-cyan" data-last-digit id="last-digit">-</strong></span>
+          <span class="mono text-muted" style="font-size:0.76rem;">Parity: <strong id="parity-display" data-parity>-</strong></span>
+        </div>
+        <!-- Mini parity row - last 10 -->
+        <div class="parity-row mt-12" id="mini-parity-row" style="max-height:40px;overflow:hidden;"></div>
+      </div>
+
+      <!-- Over/Under Quick Stats -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📊 O/U Stats</span>
+          <select class="form-select" id="ou-barrier-select" style="width:auto;padding:4px 26px 4px 8px;font-size:0.72rem;">
+            <option value="1">B1</option><option value="2">B2</option><option value="3">B3</option>
+            <option value="4">B4</option><option value="5" selected>B5</option><option value="6">B6</option>
+            <option value="7">B7</option><option value="8">B8</option><option value="9">B9</option>
+          </select>
+        </div>
+        <div class="ou-stats">
+          <div class="ou-row">
+            <span class="ou-label text-green">OVER</span>
+            <div class="progress-bar"><div class="progress-fill green" id="over-bar" style="width:0%"></div></div>
+            <span class="mono text-green" id="over-pct" style="font-size:0.78rem;width:36px;text-align:right;">0%</span>
+          </div>
+          <div class="ou-row mt-8">
+            <span class="ou-label text-red">UNDR</span>
+            <div class="progress-bar"><div class="progress-fill red" id="under-bar" style="width:0%"></div></div>
+            <span class="mono text-red" id="under-pct" style="font-size:0.78rem;width:36px;text-align:right;">0%</span>
+          </div>
+          <div class="ou-row mt-8">
+            <span class="ou-label text-cyan">MTCH</span>
+            <div class="progress-bar"><div class="progress-fill cyan" id="match-bar" style="width:0%"></div></div>
+            <span class="mono text-cyan" id="match-pct" style="font-size:0.78rem;width:36px;text-align:right;">0%</span>
+          </div>
+        </div>
+        <div class="mt-12">
+          <span class="mono text-muted" style="font-size:0.65rem;letter-spacing:1px;">LAST 8</span>
+          <div class="ou-sequence mt-6" id="ou-sequence"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIGIT MONITOR -->
+    <div class="card mt-16">
+      <div class="monitor-header">
+        <div class="flex flex-gap-12">
+          <span class="card-title">🎯 Live Digit Monitor</span>
+          <div class="flex flex-gap-8">
+            <span class="badge badge-cyan">Even <span id="even-pct">0%</span></span>
+            <span class="badge badge-gold">Odd <span id="odd-pct">0%</span></span>
+          </div>
+        </div>
+        <div class="flex flex-gap-8">
+          <select class="form-select" id="digit-count-select" style="width:auto;padding:4px 26px 4px 8px;font-size:0.72rem;">
+            <option value="50">Last 50</option>
+            <option value="100" selected>Last 100</option>
+            <option value="200">Last 200</option>
+            <option value="500">Last 500</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- TOP 3 SCANNER CARDS (like screenshots) -->
+      <div class="scanner-top3" id="scanner-top3">
+        <div class="scanner-card rank-1" id="sc-rank1">
+          <div class="scanner-rank">🔥 HOT DIGIT</div>
+          <div class="scanner-digit text-green" id="sc-hot-digit">-</div>
+          <div class="scanner-pct" id="sc-hot-pct">0.0%</div>
+          <div class="scanner-label">Most frequent</div>
+        </div>
+        <div class="scanner-card rank-3" id="sc-rank3">
+          <div class="scanner-rank">📊 EVEN / ODD</div>
+          <div style="display:flex;gap:12px;align-items:flex-end;">
+            <div>
+              <div class="scanner-digit text-cyan" id="sc-even-pct" style="font-size:1.6rem;">50%</div>
+              <div class="scanner-label">Even</div>
+            </div>
+            <div>
+              <div class="scanner-digit text-gold" id="sc-odd-pct" style="font-size:1.6rem;">50%</div>
+              <div class="scanner-label">Odd</div>
+            </div>
+          </div>
+        </div>
+        <div class="scanner-card rank-2" id="sc-rank2">
+          <div class="scanner-rank">❄️ COLD DIGIT</div>
+          <div class="scanner-digit text-gold" id="sc-cold-digit">-</div>
+          <div class="scanner-pct" id="sc-cold-pct">0.0%</div>
+          <div class="scanner-label">Least frequent</div>
+        </div>
+      </div>
+
+      <!-- Digit Circles 0-9 -->
+      <div class="digit-circles" id="digit-circles"></div>
+
+      <!-- Parity row last 20 -->
+      <div class="mt-14">
+        <span class="mono text-muted" style="font-size:0.68rem;letter-spacing:1px;">LAST 20 DIGITS (E/O)</span>
+        <div class="parity-row mt-8" id="parity-row"></div>
+      </div>
+    </div>
+
+    <!-- STATS + TERMINAL -->
+    <div class="grid-2 mt-16">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📈 Session Summary</span>
+          <button class="btn btn-ghost btn-sm" id="reset-stats">Reset</button>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-box"><span class="stat-label">Stake</span><span class="stat-value" id="stat-stake">0.00</span></div>
+          <div class="stat-box"><span class="stat-label">Payout</span><span class="stat-value" id="stat-payout">0.00</span></div>
+          <div class="stat-box"><span class="stat-label">Runs</span><span class="stat-value cyan" id="stat-runs">0</span></div>
+          <div class="stat-box"><span class="stat-label">Won</span><span class="stat-value profit" id="stat-won">0</span></div>
+          <div class="stat-box"><span class="stat-label">Lost</span><span class="stat-value loss" id="stat-lost">0</span></div>
+          <div class="stat-box"><span class="stat-label">P/L</span><span class="stat-value" id="stat-pnl">+0.00</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">💻 System Terminal</span>
+          <button class="btn btn-ghost btn-sm" id="clear-terminal">Clear</button>
+        </div>
+        <div class="terminal" id="terminal">
+          <div class="terminal-line info">[SYSTEM] Zalo Oracle Pro initializing...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="mt-16">
+      <span class="mono text-muted" style="font-size:0.68rem;letter-spacing:1px;">QUICK ACTIONS</span>
+      <div class="actions-grid mt-12">
+        <a href="manual-trader.html" class="action-card"><span class="action-icon">⚡</span><span class="action-label">Manual Trade</span></a>
+        <a href="analysis.html"      class="action-card"><span class="action-icon">🧠</span><span class="action-label">Analysis</span></a>
+        <a href="bot-settings.html"  class="action-card"><span class="action-icon">🤖</span><span class="action-label">Bot Settings</span></a>
+        <a href="strategies.html"    class="action-card"><span class="action-icon">📊</span><span class="action-label">Strategies</span></a>
+        <a href="risk-calculator.html" class="action-card"><span class="action-icon">🛡️</span><span class="action-label">Risk Calc</span></a>
+        <div class="action-card" id="logout-action"><span class="action-icon">🚪</span><span class="action-label">Logout</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/utils.js"></script>
+<script src="js/deriv-api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ticks.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  Auth.autoLogin();
+
+  let sessionStats = { stake:0, payout:0, runs:0, won:0, lost:0, pnl:0 };
+
+  // Init digit circles
+  const initDigitCircles = () => {
+    const c = document.getElementById('digit-circles');
+    c.innerHTML = '';
+    for (let i = 0; i <= 9; i++) {
+      c.innerHTML += `<div class="digit-circle" id="dc-${i}">
+        <span class="digit-num">${i}</span>
+        <span class="digit-pct" id="dp-${i}">0%</span>
+      </div>`;
+    }
+  };
+  initDigitCircles();
+
+  const updateDigitCircles = () => {
+    const n = parseInt(document.getElementById('digit-count-select').value);
+    const stats = Ticks.getDigitStats(n);
+    const { hot, cold } = Utils.getHotColdDigits(stats.percentages);
+    for (let i = 0; i <= 9; i++) {
+      const c = document.getElementById(`dc-${i}`);
+      const p = document.getElementById(`dp-${i}`);
+      if (!c || !p) continue;
+      p.textContent = `${stats.percentages[i]}%`;
+      c.classList.remove('hot','cold');
+      if (i === hot)  c.classList.add('hot');
+      if (i === cold) c.classList.add('cold');
+    }
+    // Scanner top3 cards
+    const hotPct  = stats.percentages[hot];
+    const coldPct = stats.percentages[cold];
+    const hotEl  = document.getElementById('sc-hot-digit');
+    const coldEl = document.getElementById('sc-cold-digit');
+    if (hotEl)  { hotEl.textContent  = hot;  document.getElementById('sc-hot-pct').textContent  = `${hotPct}%`;  }
+    if (coldEl) { coldEl.textContent = cold; document.getElementById('sc-cold-pct').textContent = `${coldPct}%`; }
+  };
+
+  const updateParityRow = () => {
+    const last20 = Ticks.getLastN(20);
+    const row = document.getElementById('parity-row');
+    const miniRow = document.getElementById('mini-parity-row');
+    const html = last20.map(price => {
+      const d = Utils.getLastDigit(price);
+      const t = Utils.isEven(d) ? 'even' : 'odd';
+      return `<div class="parity-badge ${t}">${t[0].toUpperCase()}</div>`;
+    }).join('');
+    if (row) row.innerHTML = html;
+    if (miniRow) miniRow.innerHTML = Ticks.getLastN(10).map(price => {
+      const d = Utils.getLastDigit(price);
+      const t = Utils.isEven(d) ? 'even' : 'odd';
+      return `<div class="parity-badge ${t}" style="width:22px;height:22px;font-size:0.6rem;">${t[0].toUpperCase()}</div>`;
+    }).join('');
+
+    const eo = Ticks.getEvenOdd(100);
+    const evenEl = document.getElementById('even-pct');
+    const oddEl  = document.getElementById('odd-pct');
+    if (evenEl) evenEl.textContent = `${eo.evenPercent}%`;
+    if (oddEl)  oddEl.textContent  = `${eo.oddPercent}%`;
+    // Update scanner
+    const se = document.getElementById('sc-even-pct');
+    const so = document.getElementById('sc-odd-pct');
+    if (se) se.textContent = `${eo.evenPercent}%`;
+    if (so) so.textContent = `${eo.oddPercent}%`;
+  };
+
+  const updateOUStats = () => {
+    const barrier = parseInt(document.getElementById('ou-barrier-select').value);
+    const ou = Ticks.getOverUnder(barrier, 100);
+    const overBar  = document.getElementById('over-bar');
+    const underBar = document.getElementById('under-bar');
+    const matchBar = document.getElementById('match-bar');
+    if (overBar)  { overBar.style.width  = `${ou.overPercent}%`;  document.getElementById('over-pct').textContent  = `${ou.overPercent}%`;  }
+    if (underBar) { underBar.style.width = `${ou.underPercent}%`; document.getElementById('under-pct').textContent = `${ou.underPercent}%`; }
+    if (matchBar) { matchBar.style.width = `${ou.matchPercent}%`; document.getElementById('match-pct').textContent = `${ou.matchPercent}%`; }
+    const last8 = Ticks.getLastN(8);
+    const seqEl = document.getElementById('ou-sequence');
+    if (seqEl) {
+      seqEl.innerHTML = last8.map(price => {
+        const d = Utils.getLastDigit(price);
+        const type = d > barrier ? 'over' : d < barrier ? 'under' : 'match';
+        const cls  = type === 'over' ? 'badge-green' : type === 'under' ? 'badge-red' : 'badge-cyan';
+        return `<span class="badge ${cls}" style="margin:2px;">${type[0].toUpperCase()}</span>`;
+      }).join('');
+    }
+  };
+
+  const refreshAll = () => {
+    updateDigitCircles();
+    updateParityRow();
+    updateOUStats();
+  };
+
+  Auth.onLogin(() => {
+    const symbol = document.getElementById('market-select').value;
+    Utils.terminalLog('terminal', `Connecting to market: ${symbol}`, 'info');
+    Ticks.subscribe(symbol);
+  });
+
+  Ticks.onHistory(() => {
+    refreshAll();
+    Utils.terminalLog('terminal', 'Market data loaded — analysis ready', 'ok');
+    Utils.toast('Market data loaded!', 'success');
+  });
+
+  Ticks.onTick(Utils.throttle(() => {
+    const tcEl = document.getElementById('tick-count');
+    if (tcEl) tcEl.textContent = `Ticks: ${Ticks.getCount()}`;
+    if (Ticks.getCount() % 5 === 0) refreshAll();
+  }, 100));
+
+  document.getElementById('market-select').addEventListener('change', (e) => {
+    Utils.terminalLog('terminal', `Switching to: ${e.target.value}`, 'warning');
+    Ticks.changeMarket(e.target.value);
+  });
+
+  document.getElementById('ou-barrier-select').addEventListener('change', updateOUStats);
+  document.getElementById('digit-count-select').addEventListener('change', updateDigitCircles);
+
+  document.getElementById('clear-terminal').addEventListener('click', () => {
+    document.getElementById('terminal').innerHTML = '<div class="terminal-line info">[SYSTEM] Terminal cleared.</div>';
+  });
+
+  document.getElementById('reset-stats').addEventListener('click', () => {
+    sessionStats = { stake:0, payout:0, runs:0, won:0, lost:0, pnl:0 };
+    ['stat-stake','stat-payout','stat-runs','stat-won','stat-lost'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.textContent = '0';
+    });
+    document.getElementById('stat-pnl').textContent = '+0.00';
+    Utils.toast('Session stats reset', 'info');
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', Auth.logout);
+  document.getElementById('logout-action').addEventListener('click', Auth.logout);
+
+  let botRunning = false;
+  document.getElementById('run-btn').addEventListener('click', () => {
+    botRunning = !botRunning;
+    const btn  = document.getElementById('run-btn');
+    btn.classList.toggle('running', botRunning);
+    document.getElementById('run-icon').textContent = botRunning ? '■' : '▶';
+    document.getElementById('run-text').textContent = botRunning ? 'STOP' : 'RUN';
+    Utils.terminalLog('terminal', botRunning ? 'Bot started from dashboard' : 'Bot stopped', botRunning ? 'ok' : 'warning');
+    Utils.toast(botRunning ? 'Bot running' : 'Bot stopped', botRunning ? 'success' : 'warning');
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zalo Oracle Pro — Risk Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@300;400;500;600&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/risk-calculator.css"/>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="dashboard.html" class="navbar-brand">
+    <svg width="30" height="30" viewBox="0 0 48 48" fill="none">
+      <polygon points="24,3 45,13.5 45,34.5 24,45 3,34.5 3,13.5" stroke="#00d4ff" stroke-width="1.5" fill="rgba(0,212,255,0.08)"/>
+      <circle cx="24" cy="24" r="5" fill="#00d4ff"/>
+    </svg>
+    <span class="brand-name">ZALO ORACLE PRO</span>
+    <span class="brand-tag">BETA</span>
+  </a>
+  <ul class="navbar-nav">
+    <li><a href="dashboard.html"       class="nav-link">⬛ Home</a></li>
+    <li><a href="bot-settings.html"    class="nav-link">🤖 Bot</a></li>
+    <li><a href="manual-trader.html"   class="nav-link">⚡ Manual</a></li>
+    <li><a href="analysis.html"        class="nav-link">🧠 Analysis</a></li>
+    <li><a href="strategies.html"      class="nav-link">📊 Strategies</a></li>
+    <li><a href="risk-calculator.html" class="nav-link active">🛡️ Risk</a></li>
+  </ul>
+  <div class="navbar-right">
+    <div class="balance-display">
+      <span class="balance-label">Balance</span>
+      <span class="balance-amount" data-balance>-- USD</span>
+    </div>
+    <div class="status-bar">
+      <div id="status-dot"></div>
+      <span id="status-text">Connecting...</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Exit</button>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="page-content">
+
+    <div class="rc-page-header">
+      <h2>🛡️ Risk Calculator</h2>
+      <p class="mono text-muted">Plan your trades before placing them. Know your limits.</p>
+    </div>
+
+    <div class="rc-main-grid mt-20">
+
+      <!-- LEFT: INPUT PANEL -->
+      <div>
+
+        <!-- Capital Display + Keypad -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">💰 Trading Capital</span>
+            <button class="btn btn-ghost btn-sm" id="rc-clear-btn">Clear</button>
+          </div>
+          <div class="rc-display">
+            <span class="rc-display-label">CAPITAL</span>
+            <div class="rc-display-value" id="rc-display">$0</div>
+          </div>
+          <div class="quick-btns mb-12">
+            <button class="quick-btn" data-amount="10">$10</button>
+            <button class="quick-btn" data-amount="20">$20</button>
+            <button class="quick-btn" data-amount="50">$50</button>
+            <button class="quick-btn" data-amount="100">$100</button>
+            <button class="quick-btn" data-amount="200">$200</button>
+            <button class="quick-btn" data-amount="500">$500</button>
+          </div>
+          <div class="rc-keypad">
+            <button class="key-btn" data-key="1">1</button>
+            <button class="key-btn" data-key="2">2</button>
+            <button class="key-btn" data-key="3">3</button>
+            <button class="key-btn" data-key="4">4</button>
+            <button class="key-btn" data-key="5">5</button>
+            <button class="key-btn" data-key="6">6</button>
+            <button class="key-btn" data-key="7">7</button>
+            <button class="key-btn" data-key="8">8</button>
+            <button class="key-btn" data-key="9">9</button>
+            <button class="key-btn" data-key=".">.</button>
+            <button class="key-btn" data-key="0">0</button>
+            <button class="key-btn key-del" data-key="del">⌫</button>
+          </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="card mt-16">
+          <div class="card-header">
+            <span class="card-title">⚙️ Risk Settings</span>
+          </div>
+          <div class="rc-settings-grid">
+
+            <div class="form-group">
+              <label class="form-label">Risk Percentage</label>
+              <div class="flex flex-gap-8">
+                <input type="range" id="rc-risk-pct" min="1" max="30" value="5" style="flex:1;accent-color:var(--cyan);"/>
+                <span class="mono text-cyan" id="rc-risk-pct-display" style="width:36px;text-align:right;">5%</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Martingale Multiplier</label>
+              <div class="flex flex-gap-8">
+                <input type="range" id="rc-martingale" min="1.1" max="5" step="0.1" value="1.5" style="flex:1;accent-color:var(--gold);"/>
+                <span class="mono text-gold" id="rc-martingale-display" style="width:36px;text-align:right;">1.5×</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Max Martingale Steps</label>
+              <div class="flex flex-gap-8">
+                <input type="range" id="rc-max-steps" min="1" max="10" value="5" style="flex:1;accent-color:var(--gold);"/>
+                <span class="mono text-gold" id="rc-max-steps-display" style="width:36px;text-align:right;">5</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Contract Type</label>
+              <select class="form-select" id="rc-contract-type">
+                <option value="even-odd">Even/Odd (~1.95× payout)</option>
+                <option value="over-under">Over/Under 5 (~1.95×)</option>
+                <option value="matches">Matches digit (~9×)</option>
+                <option value="differs">Differs digit (~1.05×)</option>
+                <option value="rise-fall">Rise/Fall (~1.95×)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Daily Profit Target ($)</label>
+              <input type="number" class="form-input" id="rc-daily-target" value="20" min="1" step="1"/>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: RESULTS PANEL -->
+      <div>
+
+        <!-- Key Metrics -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📊 Key Metrics</span>
+          </div>
+          <div class="rc-results-grid">
+            <div class="rc-result-item rc-result-gold">
+              <span class="rc-result-icon">💰</span>
+              <span class="rc-result-label">Recommended Stake</span>
+              <span class="rc-result-value" id="rc-stake">$0.00</span>
+              <span class="rc-result-sub">Based on <span id="rc-stake-pct">5</span>% risk</span>
+            </div>
+            <div class="rc-result-item rc-result-cyan">
+              <span class="rc-result-icon">🛡️</span>
+              <span class="rc-result-label">Buffer Needed</span>
+              <span class="rc-result-value" id="rc-buffer">$0.00</span>
+              <span class="rc-result-sub">Full martingale sequence</span>
+            </div>
+            <div class="rc-result-item rc-result-green">
+              <span class="rc-result-icon">🎯</span>
+              <span class="rc-result-label">Suggested Take Profit</span>
+              <span class="rc-result-value" id="rc-tp">$0.00</span>
+              <span class="rc-result-sub" id="rc-tp-sub">~0 trades to hit</span>
+            </div>
+            <div class="rc-result-item rc-result-red">
+              <span class="rc-result-icon">🛑</span>
+              <span class="rc-result-label">Suggested Stop Loss</span>
+              <span class="rc-result-value" id="rc-sl">$0.00</span>
+              <span class="rc-result-sub" id="rc-sl-sub">Protects capital</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Martingale Sequence -->
+        <div class="card mt-16">
+          <div class="card-header">
+            <span class="card-title">🔄 Martingale Sequence</span>
+            <span class="mono text-muted" style="font-size:0.68rem;">Total cost if all steps lose</span>
+          </div>
+          <div class="mart-seq-grid" id="rc-mart-seq"></div>
+          <div class="flex-between mt-12" style="padding-top:10px;border-top:1px solid var(--border);">
+            <span class="mono text-muted" style="font-size:0.72rem;">Total buffer to survive all steps:</span>
+            <span class="mono text-gold" id="rc-total-buffer">$0.00</span>
+          </div>
+        </div>
+
+        <!-- Breakdown Bars -->
+        <div class="card mt-16">
+          <div class="card-header">
+            <span class="card-title">📈 Capital Breakdown</span>
+          </div>
+          <div class="breakdown-bars" id="rc-breakdown">
+            <div class="breakdown-row">
+              <span class="mono text-muted" style="font-size:0.68rem;width:100px;">Trading buffer</span>
+              <div class="progress-bar" style="flex:1;"><div class="progress-fill cyan" id="bb-buffer" style="width:0%"></div></div>
+              <span class="mono text-cyan" id="bb-buffer-pct" style="font-size:0.68rem;width:38px;text-align:right;">0%</span>
+            </div>
+            <div class="breakdown-row mt-8">
+              <span class="mono text-muted" style="font-size:0.68rem;width:100px;">Safe reserve</span>
+              <div class="progress-bar" style="flex:1;"><div class="progress-fill green" id="bb-reserve" style="width:0%"></div></div>
+              <span class="mono text-green" id="bb-reserve-pct" style="font-size:0.68rem;width:38px;text-align:right;">0%</span>
+            </div>
+          </div>
+          <div class="breakdown-summary mt-14">
+            <div class="flex-between">
+              <span class="mono text-muted" style="font-size:0.72rem;">Trades needed to reach daily target:</span>
+              <span class="mono text-gold" id="rc-trades-needed">0</span>
+            </div>
+            <div class="flex-between mt-6">
+              <span class="mono text-muted" style="font-size:0.72rem;">% of capital in play:</span>
+              <span class="mono text-cyan" id="rc-capital-risk-pct">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Risk Rating -->
+        <div class="card mt-16">
+          <div class="card-header">
+            <span class="card-title">⚖️ Risk Rating</span>
+          </div>
+          <div class="rating-display mt-8">
+            <div class="rating-label" id="rc-rating-label">--</div>
+            <div class="rating-bar-track mt-10">
+              <div class="rating-bar-fill" id="rc-rating-bar" style="width:0%;background:var(--green);"></div>
+            </div>
+          </div>
+          <p class="mono text-muted mt-12" style="font-size:0.72rem;line-height:1.6;" id="rc-rating-advice"></p>
+          <div class="flex-between mt-16">
+            <button class="btn btn-ghost" id="rc-to-bot-btn">⚙️ Apply to Bot</button>
+            <button class="btn btn-primary" id="rc-to-strategy-btn">📊 Browse Strategies</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/utils.js"></script>
+<script src="js/deriv-api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  Auth.autoLogin();
+
+  let capitalStr = '';
+
+  const payoutMap = {
+    'even-odd'   : 1.95,
+    'over-under' : 1.95,
+    'matches'    : 9.0,
+    'differs'    : 1.05,
+    'rise-fall'  : 1.95,
+  };
+
+  const updateDisplay = () => {
+    const val = capitalStr === '' ? 0 : parseFloat(capitalStr);
+    document.getElementById('rc-display').textContent = `$${val === 0 ? '0' : val.toLocaleString('en-US', {minimumFractionDigits: val % 1 !== 0 ? 2 : 0})}`;
+  };
+
+  // Keypad
+  document.querySelectorAll('.key-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.key;
+      if (key === 'del') {
+        capitalStr = capitalStr.slice(0, -1);
+      } else if (key === '.') {
+        if (!capitalStr.includes('.')) capitalStr += '.';
+      } else {
+        if (capitalStr.length >= 8) return;
+        capitalStr += key;
+      }
+      updateDisplay();
+      recalculate();
+    });
+  });
+
+  document.getElementById('rc-clear-btn').addEventListener('click', () => {
+    capitalStr = '';
+    updateDisplay();
+    recalculate();
+  });
+
+  // Quick amounts
+  document.querySelectorAll('.quick-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const amt = btn.dataset.amount;
+      capitalStr = amt;
+      updateDisplay();
+      recalculate();
+    });
+  });
+
+  // Range sliders
+  document.getElementById('rc-risk-pct').addEventListener('input', (e) => {
+    document.getElementById('rc-risk-pct-display').textContent = `${e.target.value}%`;
+    document.getElementById('rc-stake-pct').textContent = e.target.value;
+    recalculate();
+  });
+  document.getElementById('rc-martingale').addEventListener('input', (e) => {
+    document.getElementById('rc-martingale-display').textContent = `${parseFloat(e.target.value).toFixed(1)}×`;
+    recalculate();
+  });
+  document.getElementById('rc-max-steps').addEventListener('input', (e) => {
+    document.getElementById('rc-max-steps-display').textContent = e.target.value;
+    recalculate();
+  });
+  document.getElementById('rc-contract-type').addEventListener('change', recalculate);
+  document.getElementById('rc-daily-target').addEventListener('input', recalculate);
+
+  function recalculate() {
+    const capital     = parseFloat(capitalStr) || 0;
+    const riskPct     = parseFloat(document.getElementById('rc-risk-pct').value) / 100;
+    const martingale  = parseFloat(document.getElementById('rc-martingale').value);
+    const maxSteps    = parseInt(document.getElementById('rc-max-steps').value);
+    const contractKey = document.getElementById('rc-contract-type').value;
+    const payout      = payoutMap[contractKey] || 1.95;
+    const dailyTarget = parseFloat(document.getElementById('rc-daily-target').value) || 20;
+
+    if (capital === 0) {
+      ['rc-stake','rc-buffer','rc-tp','rc-sl','rc-total-buffer','rc-trades-needed','rc-capital-risk-pct'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.textContent = '$0.00';
+      });
+      return;
+    }
+
+    const stake   = Math.max(0.35, Math.round(capital * riskPct * 100) / 100);
+    const seq     = Utils.getMartingaleSequence(stake, martingale, maxSteps);
+    const buffer  = Utils.getMartingaleBuffer(stake, martingale, maxSteps);
+    const profitPerTrade = stake * (payout - 1);
+    const tp      = Math.max(1, Math.round(dailyTarget * 0.5 * 100) / 100);
+    const sl      = Math.max(0.5, Math.round(buffer * 0.7 * 100) / 100);
+    const tradesNeeded = profitPerTrade > 0 ? Math.ceil(dailyTarget / profitPerTrade) : '∞';
+    const capitalRiskPct = Math.round((buffer / capital) * 100);
+
+    document.getElementById('rc-stake').textContent         = `$${stake.toFixed(2)}`;
+    document.getElementById('rc-buffer').textContent        = `$${buffer.toFixed(2)}`;
+    document.getElementById('rc-tp').textContent            = `$${tp.toFixed(2)}`;
+    document.getElementById('rc-sl').textContent            = `$${sl.toFixed(2)}`;
+    document.getElementById('rc-total-buffer').textContent  = `$${buffer.toFixed(2)}`;
+    document.getElementById('rc-trades-needed').textContent = tradesNeeded;
+    document.getElementById('rc-capital-risk-pct').textContent = `${capitalRiskPct}%`;
+    document.getElementById('rc-tp-sub').textContent        = `~${Math.ceil(tp / profitPerTrade)} trades to hit`;
+
+    // Martingale sequence
+    const seqEl = document.getElementById('rc-mart-seq');
+    if (seqEl) {
+      seqEl.innerHTML = seq.map((s, i) => `
+        <div class="mart-seq-item">
+          <span class="mono text-muted" style="font-size:0.6rem;">Step ${i+1}</span>
+          <span class="mono ${i<2 ? 'text-cyan' : i<4 ? 'text-gold' : 'text-red'}" style="font-size:0.84rem;font-weight:700;">$${s.toFixed(2)}</span>
+          <span class="mono text-muted" style="font-size:0.58rem;">Total: $${seq.slice(0,i+1).reduce((a,b)=>a+b,0).toFixed(2)}</span>
+        </div>`
+      ).join('');
+    }
+
+    // Breakdown bars
+    const bufferPct  = Math.min(100, capitalRiskPct);
+    const reservePct = Math.max(0, 100 - capitalRiskPct);
+    const bbBuf = document.getElementById('bb-buffer');
+    const bbRes = document.getElementById('bb-reserve');
+    if (bbBuf) { bbBuf.style.width = `${bufferPct}%`;  document.getElementById('bb-buffer-pct').textContent  = `${bufferPct}%`;  }
+    if (bbRes) { bbRes.style.width = `${reservePct}%`; document.getElementById('bb-reserve-pct').textContent = `${reservePct}%`; }
+
+    // Risk rating
+    let rating, advice, color, barPct;
+    if (capitalRiskPct <= 10) {
+      rating = 'SAFE'; color = 'var(--green)'; barPct = 20;
+      advice = 'Conservative approach. Your capital is well protected. Good for long-term consistent trading.';
+    } else if (capitalRiskPct <= 20) {
+      rating = 'MODERATE'; color = 'var(--cyan)'; barPct = 40;
+      advice = 'Balanced risk. This setup gives you a fair chance to grow while limiting downside. Recommended for most traders.';
+    } else if (capitalRiskPct <= 35) {
+      rating = 'ELEVATED'; color = 'var(--gold)'; barPct = 65;
+      advice = 'Higher risk. You could hit your buffer limit after a bad streak. Consider reducing martingale steps or stake size.';
+    } else if (capitalRiskPct <= 55) {
+      rating = 'HIGH RISK'; color = 'var(--red)'; barPct = 82;
+      advice = '⚠️ Dangerous. A single martingale sequence could consume more than half your capital. Reduce stake or steps.';
+    } else {
+      rating = 'EXTREME'; color = 'var(--red)'; barPct = 100;
+      advice = '🚨 Critical risk level. One bad run could wipe your entire account. Do not trade with these settings.';
+    }
+
+    document.getElementById('rc-rating-label').textContent    = rating;
+    document.getElementById('rc-rating-label').style.color    = color;
+    document.getElementById('rc-rating-bar').style.width      = `${barPct}%`;
+    document.getElementById('rc-rating-bar').style.background = color;
+    document.getElementById('rc-rating-advice').textContent   = advice;
+  }
+
+  document.getElementById('rc-to-bot-btn').addEventListener('click', () => {
+    const stake  = document.getElementById('rc-stake').textContent.replace('$','');
+    const tp     = document.getElementById('rc-tp').textContent.replace('$','');
+    const sl     = document.getElementById('rc-sl').textContent.replace('$','');
+    localStorage.setItem('zalo_rc_result', JSON.stringify({
+      stake: parseFloat(stake), tp: parseFloat(tp), sl: parseFloat(sl)
+    }));
+    Utils.toast('Values saved — redirecting to Bot...', 'success');
+    setTimeout(() => { window.location.href = 'bot-settings.html'; }, 900);
+  });
+
+  document.getElementById('rc-to-strategy-btn').addEventListener('click', () => {
+    window.location.href = 'strategies.html';
+  });
+
+  // Load account balance as default capital suggestion
+  Auth.onLogin((account) => {
+    if (account && account.balance) {
+      capitalStr = String(account.balance);
+      updateDisplay();
+      recalculate();
+    }
+  });
+});
+</script>
+</body>
+</html>
