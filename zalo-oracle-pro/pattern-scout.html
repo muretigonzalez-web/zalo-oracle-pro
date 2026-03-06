@@ -612,22 +612,21 @@
 // ══════════════════════════════════════════════════════════════
 const MARKETS = {
   'grid-vol': [
-    { symbol: 'R_10',  name: 'Volatility 10',  speed: '2s tick' },
-    { symbol: 'R_25',  name: 'Volatility 25',  speed: '2s tick' },
-    { symbol: 'R_50',  name: 'Volatility 50',  speed: '2s tick' },
-    { symbol: 'R_75',  name: 'Volatility 75',  speed: '2s tick' },
-    { symbol: 'R_100', name: 'Volatility 100', speed: '2s tick' },
+    { symbol: 'R_10',  name: 'Volatility 10',  speed: '~2s tick' },
+    { symbol: 'R_25',  name: 'Volatility 25',  speed: '~2s tick' },
+    { symbol: 'R_50',  name: 'Volatility 50',  speed: '~2s tick' },
+    { symbol: 'R_75',  name: 'Volatility 75',  speed: '~2s tick' },
+    { symbol: 'R_100', name: 'Volatility 100', speed: '~2s tick' },
   ],
   'grid-vol1s': [
-    { symbol: 'R_10_1s',  name: 'Volatility 10 (1s)',  speed: '1s tick' },
-    { symbol: 'R_25_1s',  name: 'Volatility 25 (1s)',  speed: '1s tick' },
-    { symbol: 'R_50_1s',  name: 'Volatility 50 (1s)',  speed: '1s tick' },
-    { symbol: 'R_75_1s',  name: 'Volatility 75 (1s)',  speed: '1s tick' },
-    { symbol: 'R_100_1s', name: 'Volatility 100 (1s)', speed: '1s tick' },
-    { symbol: '1HZ150V',  name: 'Volatility 150 (1s)', speed: '1s tick' },
-    { symbol: '1HZ200V',  name: 'Volatility 200 (1s)', speed: '1s tick' },
-    { symbol: '1HZ250V',  name: 'Volatility 250 (1s)', speed: '1s tick' },
-    { symbol: '1HZ300V',  name: 'Volatility 300 (1s)', speed: '1s tick' },
+    { symbol: '1HZ10V',  name: 'Volatility 10 (1s)',  speed: '1s tick' },
+    { symbol: '1HZ15V',  name: 'Volatility 15 (1s)',  speed: '1s tick' },
+    { symbol: '1HZ25V',  name: 'Volatility 25 (1s)',  speed: '1s tick' },
+    { symbol: '1HZ30V',  name: 'Volatility 30 (1s)',  speed: '1s tick' },
+    { symbol: '1HZ50V',  name: 'Volatility 50 (1s)',  speed: '1s tick' },
+    { symbol: '1HZ75V',  name: 'Volatility 75 (1s)',  speed: '1s tick' },
+    { symbol: '1HZ90V',  name: 'Volatility 90 (1s)',  speed: '1s tick' },
+    { symbol: '1HZ100V', name: 'Volatility 100 (1s)', speed: '1s tick' },
   ],
   'grid-crash': [
     { symbol: 'CRASH300N', name: 'Crash 300',  speed: 'spike/300' },
@@ -644,9 +643,7 @@ const MARKETS = {
     { symbol: 'BOOM1000', name: 'Boom 1000', speed: 'spike/1000' },
   ],
   'grid-step': [
-    { symbol: 'stpRNG',  name: 'Step Index',     speed: 'fixed step' },
-    { symbol: 'stpRNG2', name: 'Step Index 200', speed: 'fixed step' },
-    { symbol: 'stpRNG3', name: 'Step Index 300', speed: 'fixed step' },
+    { symbol: 'stpRNG', name: 'Step Index', speed: 'fixed step' },
   ],
   'grid-jump': [
     { symbol: 'JD10',  name: 'Jump 10',  speed: 'jump index' },
