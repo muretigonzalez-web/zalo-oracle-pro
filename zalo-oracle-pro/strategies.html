@@ -212,7 +212,7 @@
           <p class="mono text-muted mt-4" style="font-size:0.72rem;">Select a strategy to view detailed execution guidelines and entry conditions.</p>
         </div>
         <div class="flex flex-gap-8">
-          <span class="stag stag-green">6 Strategies</span>
+          <span class="stag stag-green">7 Strategies</span>
           <span class="stag stag-cyan">Live Conditions</span>
         </div>
       </div>
@@ -841,7 +841,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   Auth.autoLogin();
 
-  // Strategy card definitions
   const strategies = [
     {
       id: 'even-odd',
@@ -934,6 +933,20 @@ document.addEventListener('DOMContentLoaded', () => {
       diffColor: 'rgba(0,212,255,0.2)',
       diffTextColor: 'var(--cyan)',
     },
+    // ── PATTERN SCOUT (special — links to its own page) ──
+    {
+      id: 'pattern-scout',
+      icon: '🔍',
+      title: 'Pattern Scout',
+      desc: 'Scan any market for the single best trigger digit. Live state machine watches ticks and alerts you exactly when to enter — Under 4 or Over 5, Skip 1 or Skip 2.',
+      tags: [['Special','stag-red'],['Live Scanner','stag-cyan'],['Auto Signal','stag-green']],
+      accent: '#00ff88',
+      iconBg: 'rgba(0,255,136,0.12)',
+      iconBorder: 'rgba(0,255,136,0.3)',
+      difficulty: 'SPECIAL',
+      diffColor: 'rgba(0,255,136,0.15)',
+      diffTextColor: '#00ff88',
+    },
   ];
 
   const grid = document.getElementById('strategy-cards');
@@ -949,6 +962,11 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>`).join('');
 
   window.showDetail = (id) => {
+    // Pattern Scout lives on its own page
+    if (id === 'pattern-scout') {
+      window.location.href = 'pattern-scout.html';
+      return;
+    }
     document.getElementById('strat-grid-view').classList.add('hidden');
     document.querySelectorAll('.strategy-detail').forEach(d => d.classList.remove('active'));
     const det = document.getElementById('detail-' + id);
