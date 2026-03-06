@@ -10,13 +10,79 @@
   <link rel="stylesheet" href="css/main.css"/>
   <link rel="stylesheet" href="css/login.css"/>
   <style>
-    @keyframes loadingBar {
-      0%   { transform: translateX(-100%); }
-      50%  { transform: translateX(60%);   }
-      100% { transform: translateX(200%);  }
+    /* OAuth login button */
+    .oauth-btn {
+      width: 100%; padding: 16px;
+      background: linear-gradient(135deg, #e84040, #c0392b);
+      border: none; border-radius: 10px;
+      color: #fff; cursor: pointer;
+      font-family: var(--font-display); font-size: 1rem; font-weight: 800;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 20px rgba(232,64,64,0.35);
+      margin-top: 8px;
     }
-    .loading-bar-wrap { width:100%; height:3px; background:var(--bg-secondary); border-radius:2px; overflow:hidden; margin-top:14px; }
-    .loading-bar-fill { height:100%; width:50%; background:linear-gradient(90deg,var(--cyan),var(--gold)); border-radius:2px; animation:loadingBar 1.4s ease-in-out infinite; }
+    .oauth-btn:hover  { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(232,64,64,0.45); }
+    .oauth-btn:active { transform: translateY(0); }
+    .oauth-btn.loading { opacity: 0.7; pointer-events: none; }
+
+    .deriv-logo-text {
+      font-family: 'Rajdhani', sans-serif; font-size: 1.1rem;
+      font-weight: 900; color: #fff; letter-spacing: 1px;
+    }
+
+    /* Connecting overlay */
+    .connecting-overlay {
+      display: none; flex-direction: column; align-items: center;
+      justify-content: center; gap: 16px; padding: 30px;
+      text-align: center;
+    }
+    .connecting-overlay.visible { display: flex; }
+    .spin-ring {
+      width: 48px; height: 48px; border-radius: 50%;
+      border: 3px solid rgba(0,212,255,0.2);
+      border-top-color: var(--cyan);
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .connecting-msg {
+      font-family: var(--font-mono); font-size: 0.78rem; color: var(--cyan);
+      letter-spacing: 0.5px;
+    }
+
+    .divider-or {
+      display: flex; align-items: center; gap: 10px;
+      margin: 18px 0;
+    }
+    .divider-or::before, .divider-or::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .divider-or span { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); }
+
+    /* Token fallback */
+    .token-fallback { display: none; }
+    .token-fallback.show { display: block; }
+    .toggle-method {
+      font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted);
+      text-align: center; cursor: pointer; padding: 8px 0;
+      text-decoration: underline;
+    }
+    .toggle-method:hover { color: var(--cyan); }
+
+    .acct-list {
+      display: flex; flex-direction: column; gap: 8px; margin: 12px 0;
+    }
+    .acct-item {
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 14px;
+      display: flex; justify-content: space-between; align-items: center;
+      cursor: pointer; transition: var(--transition);
+    }
+    .acct-item:hover { border-color: var(--cyan); }
+    .acct-item.selected { border-color: var(--cyan); background: rgba(0,212,255,0.06); }
+    .acct-name { font-family: var(--font-display); font-size: 0.8rem; font-weight: 700; color: var(--text-primary); }
+    .acct-type { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-muted); }
   </style>
 </head>
 <body class="login-body">
@@ -27,7 +93,7 @@
 
 <div class="login-wrapper">
 
-  <!-- LEFT panel -->
+  <!-- LEFT: Features -->
   <div class="login-left">
     <div class="brand-block">
       <svg width="48" height="48" viewBox="0 0 48 48" fill="none" class="brand-icon">
@@ -41,46 +107,86 @@
         <div class="brand-tagline">POWERED BY DERIV API · BETA</div>
       </div>
     </div>
+
     <div class="feature-list">
-      <div class="feature-item"><span class="feature-icon">📡</span><div><div class="feature-title">Live Tick Streaming</div><div class="feature-desc">Real-time price feeds via Deriv WebSocket API. Every tick analyzed instantly.</div></div></div>
-      <div class="feature-item"><span class="feature-icon">🧠</span><div><div class="feature-title">Smart Analysis Engine</div><div class="feature-desc">Digit frequency, even/odd balance, over/under streaks — all at a glance.</div></div></div>
-      <div class="feature-item"><span class="feature-icon">🤖</span><div><div class="feature-title">Automated Bot Trading</div><div class="feature-desc">Configurable bot with martingale, take profit and stop loss protection.</div></div></div>
-      <div class="feature-item"><span class="feature-icon">🛡️</span><div><div class="feature-title">Risk Management</div><div class="feature-desc">Built-in risk calculator. Know your buffer, stake and limits before you trade.</div></div></div>
+      <div class="feature-item">
+        <span class="feature-icon">📡</span>
+        <div>
+          <div class="feature-title">Live Tick Streaming</div>
+          <div class="feature-desc">Real-time price feeds via Deriv WebSocket API. Every tick analyzed instantly.</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🧠</span>
+        <div>
+          <div class="feature-title">Smart Analysis Engine</div>
+          <div class="feature-desc">Digit frequency, even/odd balance, over/under streaks — all at a glance.</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🤖</span>
+        <div>
+          <div class="feature-title">Automated Bot Trading</div>
+          <div class="feature-desc">Configurable bots with martingale, take profit and stop loss protection.</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🛡️</span>
+        <div>
+          <div class="feature-title">Risk Management</div>
+          <div class="feature-desc">Built-in risk calculator. Know your buffer, stake and limits before you trade.</div>
+        </div>
+      </div>
     </div>
+
     <div class="risk-warning">
       <span class="risk-icon">⚠️</span>
       Trading involves significant risk. Never trade with money you cannot afford to lose.
     </div>
   </div>
 
-  <!-- RIGHT: login card -->
+  <!-- RIGHT: Login Card -->
   <div class="login-right">
     <div class="login-card">
-      <div class="login-title">Connect Account</div>
-      <div class="login-subtitle">Securely login via your Deriv account</div>
 
-      <!-- Loading state (shown during OAuth callback processing) -->
-      <div id="auth-loading" style="display:none; text-align:center; padding:28px 0;">
-        <div style="font-size:2.2rem; margin-bottom:12px;">🔐</div>
-        <div style="font-family:var(--font-mono);font-size:0.82rem;color:var(--text-secondary);" id="auth-loading-text">
-          Authorizing with Deriv...
-        </div>
-        <div class="loading-bar-wrap"><div class="loading-bar-fill"></div></div>
-      </div>
+      <!-- DEFAULT: OAuth Button -->
+      <div id="login-view">
+        <div class="login-title">Connect Account</div>
+        <div class="login-subtitle">Sign in with your Deriv account to get started</div>
 
-      <!-- Normal login form -->
-      <div id="login-form">
-        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-top:20px;font-family:var(--font-mono);font-size:0.76rem;color:var(--text-secondary);line-height:1.8;">
-          <div style="color:var(--cyan);font-weight:700;margin-bottom:8px;">🔐 Secure OAuth Login</div>
-          You will be redirected to Deriv to authorise Zalo Oracle Pro.<br>
-          No password is stored here — Deriv handles all authentication.
-        </div>
-
-        <div id="login-error" class="login-error mt-12" style="display:none;"></div>
-
-        <button class="btn btn-primary btn-full mt-20" id="login-btn">
-          ⚡ LOGIN WITH DERIV
+        <button class="oauth-btn mt-24" id="oauth-btn" onclick="doOAuth()">
+          <svg width="22" height="22" viewBox="0 0 40 40" fill="none">
+            <circle cx="20" cy="20" r="18" fill="#fff" opacity="0.15"/>
+            <text x="20" y="27" font-size="18" text-anchor="middle" fill="#fff" font-weight="900" font-family="sans-serif">d</text>
+          </svg>
+          <span class="deriv-logo-text">deriv</span>
+          <span style="opacity:0.7;">|</span>
+          LOGIN WITH DERIV
         </button>
+
+        <div class="login-error mt-12" id="login-error" style="display:none;">
+          ⚠️ <span id="login-error-text">Something went wrong.</span>
+        </div>
+
+        <div class="divider-or"><span>OR</span></div>
+
+        <!-- Token fallback toggle -->
+        <div class="toggle-method" onclick="toggleTokenMode()">Use API token instead</div>
+
+        <div class="token-fallback mt-12" id="token-fallback">
+          <div class="form-group">
+            <label class="form-label">API Token</label>
+            <div class="token-input-wrap">
+              <input type="password" class="form-input" id="api-token-input"
+                placeholder="Paste Deriv API token"
+                autocomplete="off" spellcheck="false"/>
+              <button class="token-eye-btn" id="token-eye" type="button">👁</button>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full mt-12" id="token-login-btn">
+            ⚡ CONNECT WITH TOKEN
+          </button>
+        </div>
 
         <div class="deriv-branding-row mt-16">
           <div class="status-bar">
@@ -89,10 +195,32 @@
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <span style="font-family:var(--font-mono);font-size:0.62rem;color:var(--text-muted);">Powered by</span>
-            <span style="font-family:var(--font-display);font-size:0.72rem;font-weight:700;color:var(--red);">deriv</span>
+            <span style="font-family:var(--font-display);font-size:0.72rem;font-weight:700;color:#e84040;">deriv</span>
           </div>
         </div>
       </div>
+
+      <!-- CONNECTING VIEW (shown while processing OAuth callback) -->
+      <div class="connecting-overlay" id="connecting-view">
+        <div class="spin-ring"></div>
+        <div class="login-title" style="font-size:1.1rem;">Connecting...</div>
+        <div class="connecting-msg" id="connecting-msg">Authorizing with Deriv</div>
+        <div class="status-bar mt-10">
+          <div id="status-dot2" class="connecting"></div>
+          <span id="status-text2" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);">Please wait</span>
+        </div>
+      </div>
+
+      <!-- ACCOUNT SELECTION (if multiple accounts) -->
+      <div id="account-select-view" style="display:none;">
+        <div class="login-title">Choose Account</div>
+        <div class="login-subtitle">Multiple accounts found. Select which to use:</div>
+        <div class="acct-list" id="acct-list"></div>
+        <button class="btn btn-primary btn-full mt-16" id="use-account-btn">
+          Continue →
+        </button>
+      </div>
+
     </div>
   </div>
 </div>
@@ -101,37 +229,190 @@
 <script src="js/deriv-api.js"></script>
 <script src="js/auth.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
 
-  // ── Is this an OAuth callback? (Deriv sends ?acct1=...&token1=...) ──
-  const urlParams = new URLSearchParams(window.location.search);
-  const isCallback = urlParams.get('acct1') || urlParams.get('token1');
-
-  if (isCallback) {
-    document.getElementById('auth-loading').style.display = 'block';
-    document.getElementById('login-form').style.display   = 'none';
-    document.getElementById('auth-loading-text').textContent = 'Connecting to Deriv...';
-
-    const ok = await Auth.handleOAuthCallback();
-    if (!ok) {
-      document.getElementById('auth-loading').style.display = 'none';
-      document.getElementById('login-form').style.display   = 'block';
-    }
+  // ── If already logged in, skip to dashboard ──────────────────────────────
+  if (localStorage.getItem('zalo_api_token') && !window.location.search.includes('token1')) {
+    window.location.href = 'dashboard.html';
     return;
   }
 
-  // ── Already logged in? Skip to dashboard ──
-  if (Auth.hasSession()) {
-    document.getElementById('auth-loading').style.display = 'block';
-    document.getElementById('auth-loading-text').textContent = 'Restoring session...';
-    document.getElementById('login-form').style.display = 'none';
-    setTimeout(() => { window.location.href = 'dashboard.html'; }, 400);
+  // ── CHECK FOR OAUTH CALLBACK ─────────────────────────────────────────────
+  const accounts = DerivAPI.parseOAuthCallback();
+  if (accounts) {
+    // We got redirected back from Deriv with tokens
+    showConnecting('Processing login...');
+    handleOAuthAccounts(accounts);
     return;
   }
 
-  // ── Normal state: show login button ──
-  document.getElementById('login-btn').addEventListener('click', () => Auth.login());
+  // ── NORMAL LOGIN PAGE ────────────────────────────────────────────────────
+
+  // Token visibility toggle
+  const eyeBtn   = document.getElementById('token-eye');
+  const tokenInp = document.getElementById('api-token-input');
+  if (eyeBtn && tokenInp) {
+    eyeBtn.addEventListener('click', () => {
+      const show = tokenInp.type === 'password';
+      tokenInp.type      = show ? 'text' : 'password';
+      eyeBtn.textContent = show ? '🙈' : '👁';
+    });
+    tokenInp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('token-login-btn')?.click();
+    });
+  }
+
+  // Token login button
+  document.getElementById('token-login-btn')?.addEventListener('click', () => {
+    const token = document.getElementById('api-token-input')?.value.trim();
+    if (!token) { showError('Please paste your API token'); return; }
+    showConnecting('Connecting with token...');
+    loginWithToken(token);
+  });
 });
+
+// ── OAUTH BUTTON ────────────────────────────────────────────────────────────
+function doOAuth() {
+  const btn = document.getElementById('oauth-btn');
+  if (btn) { btn.classList.add('loading'); btn.textContent = 'Redirecting...'; }
+  setTimeout(() => DerivAPI.redirectToOAuth(), 200);
+}
+
+// ── TOGGLE TOKEN MODE ────────────────────────────────────────────────────────
+function toggleTokenMode() {
+  const el = document.getElementById('token-fallback');
+  if (el) el.classList.toggle('show');
+}
+
+// ── HANDLE OAUTH ACCOUNTS ────────────────────────────────────────────────────
+function handleOAuthAccounts(accounts) {
+  // If only one account or one demo + one real → auto pick demo
+  const demo = accounts.find(a => a.loginid.toUpperCase().startsWith('VRT'));
+  const real = accounts.find(a => a.loginid.toUpperCase().startsWith('CR'));
+
+  if (accounts.length === 1 || (demo && accounts.length <= 2)) {
+    // Auto-login with preferred
+    const preferred = demo || accounts[0];
+    loginWithAccount(preferred, accounts);
+    return;
+  }
+
+  // Multiple non-obvious accounts — show picker
+  showAccountPicker(accounts);
+}
+
+// ── LOGIN WITH SPECIFIC ACCOUNT ──────────────────────────────────────────────
+function loginWithAccount(preferred, allAccounts) {
+  updateConnectingMsg(`Connecting as ${preferred.loginid}...`);
+
+  // Save everything
+  localStorage.setItem('zalo_all_accounts', JSON.stringify(allAccounts));
+  localStorage.setItem('zalo_api_token',    preferred.token);
+  localStorage.setItem('zalo_loginid',      preferred.loginid);
+  localStorage.setItem('zalo_currency',     preferred.currency);
+
+  // Connect and authorize
+  DerivAPI.connect(preferred.token);
+
+  DerivAPI.on('authorized', (data) => {
+    if (data?.balance !== undefined) {
+      localStorage.setItem('zalo_balance', data.balance);
+    }
+    updateConnectingMsg('✔ Connected! Loading dashboard...');
+    setTimeout(() => { window.location.href = 'dashboard.html'; }, 700);
+  });
+
+  DerivAPI.on('error', (err) => {
+    if (err.code === 'InvalidToken' || err.code === 'AuthorizationRequired') {
+      showView('login-view');
+      showError('Login failed: ' + err.message);
+    }
+  });
+}
+
+// ── LOGIN WITH RAW TOKEN ──────────────────────────────────────────────────────
+function loginWithToken(token) {
+  DerivAPI.connect(token);
+
+  DerivAPI.on('authorized', (data) => {
+    localStorage.setItem('zalo_api_token', token);
+    localStorage.setItem('zalo_loginid',   data.loginid  || '');
+    localStorage.setItem('zalo_currency',  data.currency || 'USD');
+    localStorage.setItem('zalo_balance',   data.balance  || 0);
+    updateConnectingMsg('✔ Connected! Loading dashboard...');
+    setTimeout(() => { window.location.href = 'dashboard.html'; }, 700);
+  });
+
+  DerivAPI.on('error', (err) => {
+    if (err.code === 'InvalidToken' || err.code === 'AuthorizationRequired') {
+      showView('login-view');
+      showError('Invalid token. Please try again.');
+    }
+  });
+}
+
+// ── ACCOUNT PICKER ────────────────────────────────────────────────────────────
+function showAccountPicker(accounts) {
+  showView('account-select-view');
+  let selected = accounts[0];
+
+  const list = document.getElementById('acct-list');
+  list.innerHTML = accounts.map((a, i) => `
+    <div class="acct-item ${i === 0 ? 'selected' : ''}" data-idx="${i}" onclick="selectAcct(this, ${i})">
+      <div>
+        <div class="acct-name">${a.loginid}</div>
+        <div class="acct-type">${a.loginid.startsWith('VRT') ? '🔵 Demo Account' : '🟢 Real Account'} · ${a.currency}</div>
+      </div>
+      <span style="color:var(--cyan);font-size:1.2rem;">${i === 0 ? '✔' : ''}</span>
+    </div>`).join('');
+
+  document.getElementById('use-account-btn').onclick = () => {
+    loginWithAccount(selected, accounts);
+  };
+
+  window.selectAcct = (el, idx) => {
+    document.querySelectorAll('.acct-item').forEach(e => {
+      e.classList.remove('selected');
+      e.querySelector('span').textContent = '';
+    });
+    el.classList.add('selected');
+    el.querySelector('span').textContent = '✔';
+    selected = accounts[idx];
+  };
+}
+
+// ── UI HELPERS ─────────────────────────────────────────────────────────────────
+function showConnecting(msg) {
+  showView('connecting-view');
+  updateConnectingMsg(msg);
+}
+
+function updateConnectingMsg(msg) {
+  const el = document.getElementById('connecting-msg');
+  if (el) el.textContent = msg;
+}
+
+function showView(id) {
+  ['login-view','connecting-view','account-select-view'].forEach(v => {
+    const el = document.getElementById(v);
+    if (!el) return;
+    if (v === 'connecting-view') {
+      el.classList.toggle('visible', v === id);
+    } else {
+      el.style.display = v === id ? 'block' : 'none';
+    }
+  });
+}
+
+function showError(msg) {
+  const err = document.getElementById('login-error');
+  const txt = document.getElementById('login-error-text');
+  if (err && txt) {
+    txt.textContent  = msg;
+    err.style.display = 'block';
+    setTimeout(() => { err.style.display = 'none'; }, 7000);
+  }
+}
 </script>
 </body>
 </html>
