@@ -1,34 +1,35 @@
 /**
- * ZALO ORACLE PRO — auth.js
- * Handles OAuth callback from Deriv and session management
+ * ZALO ORACLE PRO — js/auth.js
+ * Session management. Works with deriv-api.js v4 flow.
  */
 
 const Auth = (() => {
 
   const K = {
     TOKEN    : 'zalo_api_token',
-    ACCOUNT  : 'zalo_account_info',
+    ALL_ACCS : 'zalo_all_accounts',
+    ACC_INFO : 'zalo_account_info',
+    LOGINID  : 'zalo_loginid',
     CURRENCY : 'zalo_currency',
     BALANCE  : 'zalo_balance',
-    ACCOUNT_ID: 'zalo_account_id',
   };
 
-  let onLoginCbs  = [];
-  let onLogoutCbs = [];
-
-  const onLogin  = (fn) => onLoginCbs.push(fn);
-  const onLogout = (fn) => onLogoutCbs.push(fn);
-
-  const getToken    = ()  => localStorage.getItem(K.TOKEN);
-  const hasSession  = ()  => !!getToken();
-  const getCurrency = ()  => localStorage.getItem(K.CURRENCY) || 'USD';
-  const getBalance  = ()  => parseFloat(localStorage.getItem(K.BALANCE)) || 0;
-  const getLoginId  = ()  => localStorage.getItem(K.ACCOUNT_ID) || '';
-  const getAccount  = ()  => {
-    const s = localStorage.getItem(K.ACCOUNT);
-    return s ? JSON.parse(s) : null;
+  // ── GETTERS ─────────────────────────────────────────────────────────────
+  const getToken      = ()  => localStorage.getItem(K.TOKEN);
+  const hasSession    = ()  => !!getToken();
+  const getCurrency   = ()  => localStorage.getItem(K.CURRENCY) || 'USD';
+  const getBalance    = ()  => parseFloat(localStorage.getItem(K.BALANCE) || 0);
+  const getLoginId    = ()  => localStorage.getItem(K.LOGINID)  || '';
+  const getAllAccounts = ()  => {
+    try { return JSON.parse(localStorage.getItem(K.ALL_ACCS) || '[]'); }
+    catch { return []; }
+  };
+  const getAccountInfo = () => {
+    try { return JSON.parse(localStorage.getItem(K.ACC_INFO) || 'null'); }
+    catch { return null; }
   };
 
+  // ── UPDATE BALANCE EVERYWHERE ────────────────────────────────────────────
   const updateBalance = (amount) => {
     const bal  = parseFloat(amount).toFixed(2);
     const curr = getCurrency();
@@ -38,112 +39,98 @@ const Auth = (() => {
     });
   };
 
-  // ── LOGIN: redirect to Deriv OAuth ────────────────────────────────────────
-  const login = () => DerivAPI.redirectToOAuth();
-
-  // ── HANDLE OAUTH CALLBACK ─────────────────────────────────────────────────
-  // Deriv redirects back with ?acct1=VRTCXXX&token1=a1-XXX&cur1=USD
-  const handleOAuthCallback = async () => {
-    const accounts = DerivAPI.parseOAuthCallback();
-    if (!accounts) return false;
-
-    // Clean URL — remove OAuth params
-    window.history.replaceState({}, document.title, window.location.pathname);
-
-    try {
-      setLoginState('loading', '◌ Connecting...');
-
-      const result = await DerivAPI.completeLogin(accounts);
-      const acc    = result.account;
-
-      localStorage.setItem(K.BALANCE, 0);
-
-      // Subscribe to live balance
-      DerivAPI.subscribeBalance();
-      DerivAPI.on('balance', (data) => updateBalance(data.balance));
-
-      setLoginState('success', '✔ Connected!');
-
-      // Update UI
-      document.querySelectorAll('[data-loginid]').forEach(el => { el.textContent = acc.account || '--'; });
-      document.querySelectorAll('[data-currency]').forEach(el => { el.textContent = acc.currency || '--'; });
-
-      onLoginCbs.forEach(fn => fn(acc));
-
-      setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
-      return true;
-
-    } catch(err) {
-      console.error('[Auth] Callback failed:', err);
-      setLoginState('error', '✖ Failed — Try Again');
-      showError(err.message || 'Authorization failed. Please try again.');
-      return false;
-    }
-  };
-
-  // ── AUTO LOGIN (inner pages) ───────────────────────────────────────────────
+  // ── AUTO LOGIN — call on every inner page ─────────────────────────────────
+  // Uses DerivAPI.restoreSession() which handles the full v4 OTP flow
   const autoLogin = () => {
-    const token = getToken();
-    if (!token) { window.location.href = 'index.html'; return; }
+    if (!hasSession()) {
+      window.location.href = 'index.html';
+      return;
+    }
 
-    // Restore stored values for instant UI
-    const acc  = getAccount();
+    // Restore UI immediately from cached values
     const curr = getCurrency();
     const bal  = getBalance();
+    const id   = getLoginId();
 
-    if (acc) {
-      document.querySelectorAll('[data-loginid]').forEach(el => { el.textContent = acc.account || '--'; });
-      document.querySelectorAll('[data-currency]').forEach(el => { el.textContent = curr; });
-    }
     document.querySelectorAll('[data-balance]').forEach(el => {
       el.textContent = `${curr} ${parseFloat(bal).toFixed(2)}`;
     });
+    document.querySelectorAll('[data-loginid]').forEach(el => {
+      el.textContent = id || '--';
+    });
+    document.querySelectorAll('[data-currency]').forEach(el => {
+      el.textContent = curr;
+    });
 
+    // Connect via v4 REST → OTP → WS
     DerivAPI.restoreSession()
       .then(() => {
+        // Subscribe to live balance once connected
         DerivAPI.subscribeBalance();
-        DerivAPI.on('balance', (data) => updateBalance(data.balance));
-        onLoginCbs.forEach(fn => fn(acc || {}));
       })
       .catch(err => {
-        console.error('[Auth] Auto-login failed:', err);
+        console.error('[Auth] Session restore failed:', err.message);
+        // If it's an auth error, clear and redirect
+        if (err.message?.includes('401') || err.message?.includes('token') ||
+            err.message?.includes('auth')) {
+          clearSession();
+          window.location.href = 'index.html';
+        }
+        // Otherwise just log — might be a temporary network issue
+      });
+
+    // Listen for live data
+    DerivAPI.on('authorize', (data) => {
+      if (data?.balance !== undefined) updateBalance(data.balance);
+      if (data?.loginid) {
+        localStorage.setItem(K.LOGINID, data.loginid);
+        document.querySelectorAll('[data-loginid]').forEach(el => {
+          el.textContent = data.loginid;
+        });
+      }
+      if (data?.currency) {
+        localStorage.setItem(K.CURRENCY, data.currency);
+        document.querySelectorAll('[data-currency]').forEach(el => {
+          el.textContent = data.currency;
+        });
+      }
+    });
+
+    DerivAPI.on('balance', (data) => {
+      if (data?.balance !== undefined) updateBalance(data.balance);
+    });
+
+    DerivAPI.on('error', (err) => {
+      if (err.code === 'AuthorizationRequired' || err.code === 'InvalidToken' ||
+          err.code === 'Unauthorized') {
         clearSession();
         window.location.href = 'index.html';
-      });
+      }
+    });
   };
 
-  // ── LOGOUT ────────────────────────────────────────────────────────────────
+  // ── LOGOUT ──────────────────────────────────────────────────────────────
   const logout = () => {
     clearSession();
     DerivAPI.disconnect();
-    onLogoutCbs.forEach(fn => fn());
     window.location.href = 'index.html';
   };
 
   const clearSession = () => Object.values(K).forEach(k => localStorage.removeItem(k));
 
-  // ── UI HELPERS ────────────────────────────────────────────────────────────
-  const setLoginState = (state, text) => {
-    const btn = document.getElementById('login-btn');
-    if (!btn) return;
-    btn.textContent = text;
-    btn.disabled    = (state === 'loading' || state === 'success');
-    btn.className   = `btn btn-primary btn-full ${state}`;
-  };
-
-  const showError = (msg) => {
-    const el = document.getElementById('login-error');
-    if (!el) return;
-    el.textContent   = '⚠ ' + msg;
-    el.style.display = 'block';
-    setTimeout(() => { el.style.display = 'none'; }, 10000);
-  };
-
+  // ── PUBLIC ───────────────────────────────────────────────────────────────
   return {
-    login, autoLogin, logout, handleOAuthCallback,
-    hasSession, getToken, getAccount, getCurrency,
-    getBalance, getLoginId, updateBalance,
-    onLogin, onLogout, showError, setLoginState,
+    autoLogin,
+    logout,
+    hasSession,
+    getToken,
+    getCurrency,
+    getBalance,
+    getLoginId,
+    getAllAccounts,
+    getAccountInfo,
+    updateBalance,
+    clearSession,
   };
 
 })();
