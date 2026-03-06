@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pattern Scout — Zalo Oracle Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/main.css"/>
+  <style>
+    /* ── SCOUT-SPECIFIC VARS ── */
+    :root {
+      --scout-green : #00ff88;
+      --scout-dim   : rgba(0,255,136,0.08);
+      --scout-glow  : rgba(0,255,136,0.25);
+      --scan-amber  : #ffb800;
+      --scan-red    : #ff4466;
+      --scan-blue   : #38bdf8;
+      --font-hack   : 'Share Tech Mono', monospace;
+    }
+
+    body { background: #080b10; }
+
+    /* ── MARKET SELECT PAGE ── */
+    #page-select { display: block; }
+    #page-scan   { display: none; }
+    #page-signal { display: none; }
+
+    .scout-header {
+      text-align: center; padding: 40px 20px 20px;
+    }
+    .scout-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, rgba(0,255,136,0.12), rgba(56,189,248,0.08));
+      border: 1px solid rgba(0,255,136,0.3);
+      border-radius: 30px; padding: 6px 18px; margin-bottom: 16px;
+      font-family: var(--font-hack); font-size: 0.68rem; color: var(--scout-green);
+      letter-spacing: 2px;
+    }
+    .scout-title {
+      font-family: var(--font-hack); font-size: clamp(1.4rem, 4vw, 2rem);
+      color: #fff; letter-spacing: 3px; margin-bottom: 8px;
+    }
+    .scout-title span { color: var(--scout-green); }
+    .scout-subtitle {
+      font-family: var(--font-hack); font-size: 0.75rem;
+      color: rgba(255,255,255,0.35); letter-spacing: 1.5px;
+    }
+
+    /* ── STRATEGY TABS ── */
+    .strategy-tabs {
+      display: flex; gap: 6px; justify-content: center;
+      flex-wrap: wrap; padding: 20px;
+    }
+    .strat-tab {
+      padding: 8px 20px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg-card); color: var(--text-secondary);
+      font-family: var(--font-hack); font-size: 0.72rem; cursor: pointer;
+      transition: all 0.15s ease; letter-spacing: 1px;
+    }
+    .strat-tab:hover { border-color: var(--scout-green); color: var(--scout-green); }
+    .strat-tab.active {
+      background: rgba(0,255,136,0.1); border-color: var(--scout-green);
+      color: var(--scout-green); box-shadow: 0 0 12px rgba(0,255,136,0.15);
+    }
+    .strat-tab .tab-icon { font-size: 1rem; }
+
+    /* ── MARKET GRID ── */
+    .market-section { padding: 0 20px 16px; }
+    .market-section-title {
+      font-family: var(--font-hack); font-size: 0.65rem; color: rgba(255,255,255,0.3);
+      letter-spacing: 2px; text-transform: uppercase;
+      padding: 12px 4px 8px; border-bottom: 1px solid rgba(255,255,255,0.05);
+      margin-bottom: 10px;
+    }
+    .market-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px;
+    }
+    .market-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 10px; cursor: pointer;
+      transition: all 0.15s ease; text-align: center;
+    }
+    .market-card:hover {
+      border-color: var(--scout-green); background: var(--scout-dim);
+      transform: translateY(-2px);
+    }
+    .market-card.selected {
+      border-color: var(--scout-green); background: var(--scout-dim);
+      box-shadow: 0 0 16px var(--scout-glow);
+    }
+    .market-card .m-symbol {
+      font-family: var(--font-hack); font-size: 0.62rem; color: var(--scout-green);
+      letter-spacing: 1px; margin-bottom: 4px;
+    }
+    .market-card .m-name {
+      font-size: 0.75rem; font-weight: 600; color: var(--text-primary); line-height: 1.3;
+    }
+    .market-card .m-speed {
+      font-family: var(--font-hack); font-size: 0.58rem; color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    /* ── SCAN BUTTON ── */
+    .scan-launch {
+      position: sticky; bottom: 0; background: linear-gradient(to top, #080b10 60%, transparent);
+      padding: 20px; text-align: center;
+    }
+    .btn-scan {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: linear-gradient(135deg, #00cc66, #00aa55);
+      color: #000; font-family: var(--font-hack); font-size: 0.88rem;
+      font-weight: 700; letter-spacing: 2px;
+      padding: 14px 36px; border: none; border-radius: 8px;
+      cursor: pointer; transition: all 0.2s ease;
+      box-shadow: 0 4px 24px rgba(0,204,102,0.4);
+    }
+    .btn-scan:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,204,102,0.55); }
+    .btn-scan:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+    /* ── SCANNING PAGE ── */
+    #page-scan {
+      min-height: 100vh; display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      position: relative; overflow: hidden; padding: 30px 20px;
+    }
+
+    /* Matrix rain background */
+    #matrix-canvas {
+      position: fixed; inset: 0; z-index: 0;
+      opacity: 0.18; pointer-events: none;
+    }
+
+    .scan-content {
+      position: relative; z-index: 2; text-align: center;
+      max-width: 560px; width: 100%;
+    }
+
+    .scan-ring-wrap {
+      position: relative; width: 140px; height: 140px;
+      margin: 0 auto 24px;
+    }
+    .scan-ring {
+      position: absolute; inset: 0; border-radius: 50%;
+      border: 2px solid transparent;
+      animation: ringPulse 1.4s ease-in-out infinite;
+    }
+    .scan-ring-1 { border-color: var(--scout-green); animation-delay: 0s; }
+    .scan-ring-2 { inset: 12px; border-color: rgba(0,255,136,0.5); animation-delay: 0.3s; }
+    .scan-ring-3 { inset: 24px; border-color: rgba(0,255,136,0.25); animation-delay: 0.6s; }
+    .scan-center {
+      position: absolute; inset: 40px;
+      background: radial-gradient(circle, rgba(0,255,136,0.15), transparent);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-hack); font-size: 1.4rem; color: var(--scout-green);
+    }
+    @keyframes ringPulse {
+      0%   { transform: scale(1); opacity: 1; }
+      50%  { transform: scale(1.06); opacity: 0.6; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .scan-market-name {
+      font-family: var(--font-hack); font-size: 0.8rem; color: var(--scout-green);
+      letter-spacing: 3px; margin-bottom: 6px;
+    }
+    .scan-title {
+      font-family: var(--font-hack); font-size: 1.2rem; color: #fff;
+      letter-spacing: 2px; margin-bottom: 4px;
+    }
+    .scan-subtitle {
+      font-family: var(--font-hack); font-size: 0.72rem;
+      color: rgba(255,255,255,0.4); letter-spacing: 1px; margin-bottom: 28px;
+    }
+
+    /* Tick feed */
+    .tick-feed {
+      background: rgba(0,0,0,0.5); border: 1px solid rgba(0,255,136,0.15);
+      border-radius: 8px; padding: 14px; height: 120px;
+      overflow: hidden; position: relative; margin-bottom: 20px;
+    }
+    .tick-feed-inner {
+      display: flex; flex-direction: column-reverse; gap: 3px;
+    }
+    .tick-row {
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: var(--font-hack); font-size: 0.68rem;
+      color: rgba(0,255,136,0.5); padding: 1px 0;
+      animation: tickAppear 0.2s ease;
+    }
+    .tick-row.highlight { color: var(--scout-green); font-weight: 700; }
+    @keyframes tickAppear { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; } }
+
+    /* Progress */
+    .scan-progress-wrap {
+      background: rgba(0,0,0,0.4); border: 1px solid rgba(0,255,136,0.15);
+      border-radius: 6px; padding: 12px 16px; margin-bottom: 16px;
+    }
+    .scan-progress-label {
+      display: flex; justify-content: space-between;
+      font-family: var(--font-hack); font-size: 0.65rem;
+      color: rgba(255,255,255,0.4); margin-bottom: 8px;
+    }
+    .scan-progress-bar {
+      height: 3px; background: rgba(255,255,255,0.06);
+      border-radius: 3px; overflow: hidden;
+    }
+    .scan-progress-fill {
+      height: 100%; background: var(--scout-green);
+      border-radius: 3px; transition: width 0.3s ease;
+      box-shadow: 0 0 8px var(--scout-glow);
+      width: 0%;
+    }
+
+    .scan-log {
+      font-family: var(--font-hack); font-size: 0.68rem;
+      color: rgba(0,255,136,0.5); letter-spacing: 1px;
+      height: 60px; overflow: hidden;
+    }
+    .scan-log-line { animation: logFade 0.3s ease; }
+    @keyframes logFade { from { opacity: 0; } to { opacity: 1; } }
+
+    /* ── SIGNAL PAGE ── */
+    #page-signal { padding: 20px; max-width: 600px; margin: 0 auto; }
+
+    .signal-header {
+      text-align: center; padding: 20px 0 28px;
+    }
+    .signal-market-tag {
+      font-family: var(--font-hack); font-size: 0.65rem; color: rgba(255,255,255,0.3);
+      letter-spacing: 2px; margin-bottom: 8px;
+    }
+    .signal-strategy-name {
+      font-family: var(--font-hack); font-size: 0.9rem;
+      letter-spacing: 2px; margin-bottom: 4px;
+    }
+    .signal-strategy-name.under { color: var(--scout-green); }
+    .signal-strategy-name.over  { color: var(--scan-amber); }
+
+    /* TRIGGER CARD */
+    .trigger-card {
+      background: var(--bg-card); border: 2px solid var(--scout-green);
+      border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 16px;
+      box-shadow: 0 0 30px rgba(0,255,136,0.1);
+      position: relative; overflow: hidden;
+    }
+    .trigger-card.over-mode { border-color: var(--scan-amber); box-shadow: 0 0 30px rgba(255,184,0,0.1); }
+    .trigger-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(0,255,136,0.06), transparent 60%);
+      pointer-events: none;
+    }
+    .trigger-card.over-mode::before {
+      background: radial-gradient(ellipse at 50% 0%, rgba(255,184,0,0.06), transparent 60%);
+    }
+    .trigger-label {
+      font-family: var(--font-hack); font-size: 0.62rem; color: rgba(255,255,255,0.35);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;
+    }
+    .trigger-digit {
+      font-family: var(--font-hack); font-size: 5rem; line-height: 1;
+      color: var(--scout-green); font-weight: 700;
+      text-shadow: 0 0 30px var(--scout-glow), 0 0 60px rgba(0,255,136,0.2);
+    }
+    .trigger-digit.over-mode { color: var(--scan-amber); text-shadow: 0 0 30px rgba(255,184,0,0.4); }
+    .trigger-hit-rate {
+      margin-top: 10px; font-family: var(--font-hack); font-size: 0.75rem;
+      color: rgba(255,255,255,0.5); letter-spacing: 1px;
+    }
+    .trigger-hit-rate span { color: var(--scout-green); font-size: 1rem; }
+    .trigger-hit-rate.over-mode span { color: var(--scan-amber); }
+    .confidence-bar-wrap { margin: 10px auto 0; max-width: 200px; }
+    .confidence-bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+    .confidence-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+    .confidence-fill.high   { background: var(--scout-green); }
+    .confidence-fill.medium { background: var(--scan-amber); }
+    .confidence-fill.low    { background: var(--scan-red); }
+
+    /* LIVE WATCH */
+    .live-watch {
+      background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px; padding: 16px; margin-bottom: 14px;
+    }
+    .live-watch-title {
+      font-family: var(--font-hack); font-size: 0.62rem; color: rgba(255,255,255,0.3);
+      letter-spacing: 2px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .live-dot-anim {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--scout-green);
+      animation: liveBlink 1s infinite;
+    }
+    @keyframes liveBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+    .live-tick-stream {
+      display: flex; gap: 6px; flex-wrap: wrap; min-height: 36px;
+      align-items: center;
+    }
+    .live-tick-bubble {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-hack); font-size: 0.85rem; font-weight: 700;
+      border: 1.5px solid var(--border); color: var(--text-secondary);
+      transition: all 0.2s ease;
+      animation: bubbleIn 0.25s ease;
+    }
+    @keyframes bubbleIn { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .live-tick-bubble.trigger {
+      border-color: var(--scout-green); color: var(--scout-green);
+      background: var(--scout-dim); box-shadow: 0 0 12px var(--scout-glow);
+      transform: scale(1.15);
+    }
+    .live-tick-bubble.trigger.over-mode {
+      border-color: var(--scan-amber); color: var(--scan-amber);
+      background: rgba(255,184,0,0.08); box-shadow: 0 0 12px rgba(255,184,0,0.25);
+    }
+    .live-tick-bubble.skip { border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.25); }
+    .live-tick-bubble.result-win { border-color: var(--scout-green); color: var(--scout-green); background: rgba(0,255,136,0.12); }
+    .live-tick-bubble.result-loss { border-color: var(--scan-red); color: var(--scan-red); background: rgba(255,68,102,0.12); }
+
+    /* ALERT BANNER */
+    .alert-banner {
+      border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;
+      font-family: var(--font-hack); font-size: 0.8rem; letter-spacing: 1px;
+      text-align: center; display: none;
+      animation: alertPop 0.3s ease;
+    }
+    @keyframes alertPop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .alert-banner.ready {
+      background: rgba(0,255,136,0.08); border: 1.5px solid var(--scout-green);
+      color: var(--scout-green);
+    }
+    .alert-banner.enter {
+      background: rgba(255,184,0,0.1); border: 1.5px solid var(--scan-amber);
+      color: var(--scan-amber); font-size: 1rem;
+      animation: alertPop 0.3s ease, enterPulse 0.5s ease 0.3s 2;
+    }
+    @keyframes enterPulse { 0%,100% { box-shadow: 0 0 0 rgba(255,184,0,0); } 50% { box-shadow: 0 0 20px rgba(255,184,0,0.35); } }
+    .alert-banner.win  { background: rgba(0,255,136,0.1); border: 1.5px solid var(--scout-green); color: var(--scout-green); }
+    .alert-banner.loss { background: rgba(255,68,102,0.1); border: 1.5px solid var(--scan-red); color: var(--scan-red); }
+    .alert-banner.changed { background: rgba(255,68,102,0.08); border: 1.5px solid var(--scan-red); color: var(--scan-red); }
+
+    /* STATS ROW */
+    .signal-stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px;
+    }
+    .sig-stat {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 8px; text-align: center;
+    }
+    .sig-stat-label { font-family: var(--font-hack); font-size: 0.55rem; color: var(--text-muted); letter-spacing: 1px; display: block; margin-bottom: 4px; }
+    .sig-stat-val { font-family: var(--font-hack); font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+    .sig-stat-val.green { color: var(--scout-green); }
+    .sig-stat-val.red   { color: var(--scan-red); }
+    .sig-stat-val.amber { color: var(--scan-amber); }
+
+    /* BOTTOM ACTIONS */
+    .signal-actions { display: flex; gap: 10px; }
+    .btn-rescan {
+      flex: 1; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12);
+      background: transparent; color: var(--text-secondary);
+      font-family: var(--font-hack); font-size: 0.72rem; letter-spacing: 1.5px;
+      cursor: pointer; transition: all 0.15s ease;
+    }
+    .btn-rescan:hover { border-color: var(--scout-green); color: var(--scout-green); }
+    .btn-rescan.urgent {
+      border-color: var(--scan-red); color: var(--scan-red);
+      animation: urgentPulse 1s ease infinite;
+    }
+    @keyframes urgentPulse { 0%,100% { box-shadow: none; } 50% { box-shadow: 0 0 16px rgba(255,68,102,0.3); } }
+
+    /* ── BACK BUTTON ── */
+    .back-btn {
+      position: fixed; top: 70px; left: 16px; z-index: 100;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 14px;
+      font-family: var(--font-hack); font-size: 0.68rem; color: var(--text-secondary);
+      cursor: pointer; transition: all 0.15s ease; text-decoration: none;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .back-btn:hover { border-color: var(--scout-green); color: var(--scout-green); }
+
+    /* ── PATTERN VISUAL ── */
+    .pattern-preview {
+      display: flex; align-items: center; gap: 6px;
+      justify-content: center; margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .pat-digit {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-hack); font-size: 0.8rem; font-weight: 700;
+    }
+    .pat-digit.trigger-d { background: rgba(0,255,136,0.15); border: 1.5px solid var(--scout-green); color: var(--scout-green); }
+    .pat-digit.trigger-d.over { background: rgba(255,184,0,0.12); border-color: var(--scan-amber); color: var(--scan-amber); }
+    .pat-digit.skip-d   { background: rgba(255,255,255,0.04); border: 1.5px dashed rgba(255,255,255,0.15); color: rgba(255,255,255,0.25); font-size: 0.65rem; }
+    .pat-digit.result-d { background: rgba(56,189,248,0.12); border: 1.5px solid var(--scan-blue); color: var(--scan-blue); }
+    .pat-arrow { color: rgba(255,255,255,0.2); font-size: 0.75rem; }
+
+    /* ── CONSECUTIVE LOSS INDICATOR ── */
+    .loss-indicator {
+      display: flex; gap: 6px; justify-content: center; margin: 8px 0;
+    }
+    .loss-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: rgba(255,255,255,0.08); border: 1px solid var(--border);
+      transition: all 0.3s ease;
+    }
+    .loss-dot.filled { background: var(--scan-red); border-color: var(--scan-red); box-shadow: 0 0 6px rgba(255,68,102,0.4); }
+
+    @media (max-width: 480px) {
+      .signal-stats { grid-template-columns: repeat(2, 1fr); }
+      .market-grid  { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+      .trigger-digit { font-size: 3.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="matrix-canvas"></canvas>
+
+<!-- BACK BUTTON -->
+<a href="strategies.html" class="back-btn" id="back-btn">← BACK</a>
+
+<!-- ════════════════════════════════════════════════════
+     PAGE 1: MARKET SELECT
+════════════════════════════════════════════════════ -->
+<div id="page-select">
+  <div class="scout-header">
+    <div class="scout-badge">⚡ SPECIAL STRATEGY</div>
+    <div class="scout-title">PATTERN <span>SCOUT</span></div>
+    <div class="scout-subtitle">SELECT MARKET · SELECT STRATEGY · SCAN · TRADE</div>
+  </div>
+
+  <!-- Strategy selector -->
+  <div class="strategy-tabs">
+    <div class="strat-tab active" data-strat="U1" onclick="selectStrat(this)">
+      <span class="tab-icon">📉</span> UNDER 4 · SKIP 1
+    </div>
+    <div class="strat-tab" data-strat="O1" onclick="selectStrat(this)">
+      <span class="tab-icon">📈</span> OVER 5 · SKIP 1
+    </div>
+    <div class="strat-tab" data-strat="U2" onclick="selectStrat(this)">
+      <span class="tab-icon">📉</span> UNDER 4 · SKIP 2
+    </div>
+    <div class="strat-tab" data-strat="O2" onclick="selectStrat(this)">
+      <span class="tab-icon">📈</span> OVER 5 · SKIP 2
+    </div>
+  </div>
+
+  <!-- Markets -->
+  <div style="max-width:900px;margin:0 auto;padding-bottom:120px;">
+
+    <div class="market-section">
+      <div class="market-section-title">⚡ Volatility Indices (2s tick)</div>
+      <div class="market-grid" id="grid-vol"></div>
+    </div>
+
+    <div class="market-section">
+      <div class="market-section-title">🚀 Volatility Indices (1s tick — Fast)</div>
+      <div class="market-grid" id="grid-vol1s"></div>
+    </div>
+
+    <div class="market-section">
+      <div class="market-section-title">💥 Crash Indices</div>
+      <div class="market-grid" id="grid-crash"></div>
+    </div>
+
+    <div class="market-section">
+      <div class="market-section-title">🚀 Boom Indices</div>
+      <div class="market-grid" id="grid-boom"></div>
+    </div>
+
+    <div class="market-section">
+      <div class="market-section-title">🔀 Step Indices</div>
+      <div class="market-grid" id="grid-step"></div>
+    </div>
+
+    <div class="market-section">
+      <div class="market-section-title">⚡ Jump Indices</div>
+      <div class="market-grid" id="grid-jump"></div>
+    </div>
+
+  </div>
+
+  <div class="scan-launch">
+    <button class="btn-scan" id="scan-btn" onclick="startScan()" disabled>
+      🔍 SCAN MARKET
+    </button>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════
+     PAGE 2: SCANNING
+════════════════════════════════════════════════════ -->
+<div id="page-scan">
+  <div class="scan-content">
+    <div class="scan-ring-wrap">
+      <div class="scan-ring scan-ring-1"></div>
+      <div class="scan-ring scan-ring-2"></div>
+      <div class="scan-ring scan-ring-3"></div>
+      <div class="scan-center">🔍</div>
+    </div>
+
+    <div class="scan-market-name" id="scan-market-label">—</div>
+    <div class="scan-title">SCANNING MARKET</div>
+    <div class="scan-subtitle" id="scan-strat-label">—</div>
+
+    <div class="tick-feed">
+      <div class="tick-feed-inner" id="tick-feed-inner"></div>
+    </div>
+
+    <div class="scan-progress-wrap">
+      <div class="scan-progress-label">
+        <span>FETCHING TICKS</span>
+        <span id="scan-pct">0%</span>
+      </div>
+      <div class="scan-progress-bar">
+        <div class="scan-progress-fill" id="scan-fill"></div>
+      </div>
+    </div>
+
+    <div class="scan-log" id="scan-log">
+      <div class="scan-log-line">&gt; Initializing scanner...</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════
+     PAGE 3: SIGNAL ACTIVE
+════════════════════════════════════════════════════ -->
+<div id="page-signal">
+  <div class="signal-header">
+    <div class="signal-market-tag" id="sig-market-tag">—</div>
+    <div class="signal-strategy-name under" id="sig-strat-name">UNDER 4 · SKIP 1</div>
+  </div>
+
+  <!-- ALERT BANNER -->
+  <div class="alert-banner" id="alert-banner">—</div>
+
+  <!-- TRIGGER CARD -->
+  <div class="trigger-card" id="trigger-card">
+    <div class="trigger-label">WATCH FOR THIS DIGIT</div>
+    <div class="trigger-digit" id="trigger-digit">?</div>
+    <div class="trigger-hit-rate" id="trigger-hitrate">
+      Hit rate: <span id="hitrate-val">—</span>
+    </div>
+    <div class="confidence-bar-wrap">
+      <div class="confidence-bar">
+        <div class="confidence-fill high" id="conf-fill" style="width:0%"></div>
+      </div>
+    </div>
+    <!-- Pattern visual -->
+    <div class="pattern-preview" id="pattern-preview"></div>
+  </div>
+
+  <!-- LOSS TRACKER -->
+  <div style="text-align:center;margin-bottom:10px;">
+    <div style="font-family:var(--font-hack);font-size:0.58rem;color:rgba(255,255,255,0.25);letter-spacing:1.5px;margin-bottom:6px;">CONSECUTIVE LOSSES</div>
+    <div class="loss-indicator">
+      <div class="loss-dot" id="loss-1"></div>
+      <div class="loss-dot" id="loss-2"></div>
+      <div class="loss-dot" id="loss-3"></div>
+    </div>
+  </div>
+
+  <!-- LIVE WATCH -->
+  <div class="live-watch">
+    <div class="live-watch-title">
+      <div class="live-dot-anim"></div>
+      LIVE TICK STREAM
+    </div>
+    <div class="live-tick-stream" id="live-ticks"></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="signal-stats">
+    <div class="sig-stat">
+      <span class="sig-stat-label">SIGNALS</span>
+      <div class="sig-stat-val amber" id="stat-signals">0</div>
+    </div>
+    <div class="sig-stat">
+      <span class="sig-stat-label">WINS</span>
+      <div class="sig-stat-val green" id="stat-wins">0</div>
+    </div>
+    <div class="sig-stat">
+      <span class="sig-stat-label">LOSSES</span>
+      <div class="sig-stat-val red" id="stat-losses">0</div>
+    </div>
+    <div class="sig-stat">
+      <span class="sig-stat-label">RATE</span>
+      <div class="sig-stat-val" id="stat-rate">—</div>
+    </div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="signal-actions">
+    <button class="btn-rescan" id="btn-rescan" onclick="goRescan()">🔄 RESCAN</button>
+    <button class="btn-rescan" onclick="goSelectMarket()" style="max-width:120px;">◀ MARKETS</button>
+  </div>
+</div>
+
+
+<script src="js/utils.js"></script>
+<script src="js/deriv-api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+
+// ══════════════════════════════════════════════════════════════
+//  MARKETS DATA
+// ══════════════════════════════════════════════════════════════
+const MARKETS = {
+  'grid-vol': [
+    { symbol: 'R_10',  name: 'Volatility 10',  speed: '2s tick' },
+    { symbol: 'R_25',  name: 'Volatility 25',  speed: '2s tick' },
+    { symbol: 'R_50',  name: 'Volatility 50',  speed: '2s tick' },
+    { symbol: 'R_75',  name: 'Volatility 75',  speed: '2s tick' },
+    { symbol: 'R_100', name: 'Volatility 100', speed: '2s tick' },
+  ],
+  'grid-vol1s': [
+    { symbol: 'R_10_1s',  name: 'Volatility 10 (1s)',  speed: '1s tick' },
+    { symbol: 'R_25_1s',  name: 'Volatility 25 (1s)',  speed: '1s tick' },
+    { symbol: 'R_50_1s',  name: 'Volatility 50 (1s)',  speed: '1s tick' },
+    { symbol: 'R_75_1s',  name: 'Volatility 75 (1s)',  speed: '1s tick' },
+    { symbol: 'R_100_1s', name: 'Volatility 100 (1s)', speed: '1s tick' },
+    { symbol: '1HZ150V',  name: 'Volatility 150 (1s)', speed: '1s tick' },
+    { symbol: '1HZ200V',  name: 'Volatility 200 (1s)', speed: '1s tick' },
+    { symbol: '1HZ250V',  name: 'Volatility 250 (1s)', speed: '1s tick' },
+    { symbol: '1HZ300V',  name: 'Volatility 300 (1s)', speed: '1s tick' },
+  ],
+  'grid-crash': [
+    { symbol: 'CRASH300N', name: 'Crash 300',  speed: 'spike/300' },
+    { symbol: 'CRASH500',  name: 'Crash 500',  speed: 'spike/500' },
+    { symbol: 'CRASH600',  name: 'Crash 600',  speed: 'spike/600' },
+    { symbol: 'CRASH900',  name: 'Crash 900',  speed: 'spike/900' },
+    { symbol: 'CRASH1000', name: 'Crash 1000', speed: 'spike/1000' },
+  ],
+  'grid-boom': [
+    { symbol: 'BOOM300N', name: 'Boom 300',  speed: 'spike/300' },
+    { symbol: 'BOOM500',  name: 'Boom 500',  speed: 'spike/500' },
+    { symbol: 'BOOM600',  name: 'Boom 600',  speed: 'spike/600' },
+    { symbol: 'BOOM900',  name: 'Boom 900',  speed: 'spike/900' },
+    { symbol: 'BOOM1000', name: 'Boom 1000', speed: 'spike/1000' },
+  ],
+  'grid-step': [
+    { symbol: 'stpRNG',  name: 'Step Index',     speed: 'fixed step' },
+    { symbol: 'stpRNG2', name: 'Step Index 200', speed: 'fixed step' },
+    { symbol: 'stpRNG3', name: 'Step Index 300', speed: 'fixed step' },
+  ],
+  'grid-jump': [
+    { symbol: 'JD10',  name: 'Jump 10',  speed: 'jump index' },
+    { symbol: 'JD25',  name: 'Jump 25',  speed: 'jump index' },
+    { symbol: 'JD50',  name: 'Jump 50',  speed: 'jump index' },
+    { symbol: 'JD75',  name: 'Jump 75',  speed: 'jump index' },
+    { symbol: 'JD100', name: 'Jump 100', speed: 'jump index' },
+  ],
+};
+
+// ══════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════
+let selectedMarket  = null;
+let selectedStrat   = 'U1'; // U1=Under4Skip1, O1=Over5Skip1, U2=Under4Skip2, O2=Over5Skip2
+let tickHistory     = [];
+let triggerDigit    = null;
+let hitRate         = 0;
+let liveMode        = false;
+let consecutiveLoss = 0;
+let sigSignals = 0, sigWins = 0, sigLosses = 0;
+
+// Live watch state machine
+// States: idle | triggered | skip1 | skip2 | result
+let watchState   = 'idle';
+let skipCount    = 0;
+let liveTicks    = [];
+
+// ══════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  Auth.autoLogin();
+  buildMarketGrids();
+  startMatrix();
+});
+
+function buildMarketGrids() {
+  Object.entries(MARKETS).forEach(([gridId, markets]) => {
+    const grid = document.getElementById(gridId);
+    if (!grid) return;
+    grid.innerHTML = markets.map(m => `
+      <div class="market-card" data-symbol="${m.symbol}" onclick="selectMarket(this,'${m.symbol}','${m.name}')">
+        <div class="m-symbol">${m.symbol}</div>
+        <div class="m-name">${m.name}</div>
+        <div class="m-speed">${m.speed}</div>
+      </div>`).join('');
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MARKET / STRATEGY SELECTION
+// ══════════════════════════════════════════════════════════════
+function selectMarket(el, symbol, name) {
+  document.querySelectorAll('.market-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedMarket = { symbol, name };
+  document.getElementById('scan-btn').disabled = false;
+}
+
+function selectStrat(el) {
+  document.querySelectorAll('.strat-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  selectedStrat = el.dataset.strat;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  START SCAN
+// ══════════════════════════════════════════════════════════════
+function startScan() {
+  if (!selectedMarket) return;
+  showPage('page-scan');
+  document.getElementById('scan-market-label').textContent = selectedMarket.name.toUpperCase();
+  document.getElementById('scan-strat-label').textContent  = stratLabel(selectedStrat);
+  runScan();
+}
+
+function stratLabel(s) {
+  const map = {
+    U1: 'UNDER 4 · SKIP 1 TICK',
+    O1: 'OVER 5 · SKIP 1 TICK',
+    U2: 'UNDER 4 · SKIP 2 TICKS',
+    O2: 'OVER 5 · SKIP 2 TICKS',
+  };
+  return map[s] || s;
+}
+
+function isUnder(s) { return s === 'U1' || s === 'U2'; }
+function skipCount_(s) { return (s === 'U1' || s === 'O1') ? 1 : 2; }
+function minOccurrences(s) { return (s === 'U1' || s === 'O1') ? 5 : 3; }
+
+// ══════════════════════════════════════════════════════════════
+//  RUN SCAN — fetch 100 ticks, analyze
+// ══════════════════════════════════════════════════════════════
+function runScan() {
+  scanLog('> Connecting to Deriv WebSocket...');
+  setProgress(5);
+
+  DerivAPI.on('open', () => {
+    scanLog('> Connected. Fetching last 100 ticks...');
+    setProgress(15);
+    DerivAPI.getTickHistory(selectedMarket.symbol, 100);
+  });
+
+  DerivAPI.on('history', (data) => {
+    tickHistory = data.prices || [];
+    if (tickHistory.length < 20) {
+      scanLog('> ERROR: Not enough tick data received');
+      return;
+    }
+    setProgress(50);
+    scanLog(`> Received ${tickHistory.length} ticks`);
+    animateTickFeed(tickHistory.slice(-20));
+    setTimeout(() => analyzePattern(), 800);
+  });
+
+  DerivAPI.on('error', (err) => {
+    scanLog(`> ERROR: ${err.message}`);
+  });
+
+  DerivAPI.connect();
+}
+
+function animateTickFeed(ticks) {
+  const feed = document.getElementById('tick-feed-inner');
+  feed.innerHTML = '';
+  ticks.forEach((price, i) => {
+    setTimeout(() => {
+      const lastDigit = parseInt(String(price).slice(-1));
+      const row = document.createElement('div');
+      row.className = 'tick-row';
+      row.innerHTML = `<span>tick_${i+1}</span><span>${price}</span><span class="text-cyan">[${lastDigit}]</span>`;
+      feed.insertBefore(row, feed.firstChild);
+    }, i * 40);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ANALYZE PATTERN
+// ══════════════════════════════════════════════════════════════
+function analyzePattern() {
+  scanLog('> Extracting last digits...');
+  setProgress(65);
+
+  // Extract last digits from prices
+  const digits = tickHistory.map(p => parseInt(String(p).slice(-1)));
+  const skip   = skipCount_(selectedStrat);
+  const under  = isUnder(selectedStrat);
+  const minOcc = minOccurrences(selectedStrat);
+
+  scanLog(`> Analyzing ${digits.length} digits for skip-${skip} ${under ? 'UNDER 4' : 'OVER 5'} pattern...`);
+  setProgress(80);
+
+  // Build frequency map: trigger_digit → {hits, total}
+  // Pattern: digits[i] = trigger → digits[i+skip+1] is result
+  // Recency weighting: last 50 ticks = 3x, last 100 = 2x, older = 1x
+  const freq = {};
+  for (let d = 0; d <= 9; d++) freq[d] = { hits: 0, total: 0 };
+
+  const len = digits.length;
+  for (let i = 0; i < len - skip - 1; i++) {
+    const trigger = digits[i];
+    const result  = digits[i + skip + 1];
+
+    // Recency weight
+    const age    = len - i;
+    const weight = age <= 50 ? 3 : age <= 100 ? 2 : 1;
+
+    const isHit = under ? result <= 3 : result >= 6;
+
+    freq[trigger].total += weight;
+    if (isHit) freq[trigger].hits += weight;
+  }
+
+  setProgress(90);
+  scanLog('> Scoring trigger candidates...');
+
+  // Find best trigger with minimum occurrences
+  let best = null, bestScore = 0;
+  for (let d = 0; d <= 9; d++) {
+    if (freq[d].total < minOcc) continue;
+    const rate = freq[d].hits / freq[d].total;
+    if (rate > bestScore) {
+      bestScore = rate;
+      best = d;
+    }
+  }
+
+  setProgress(100);
+
+  if (best === null) {
+    scanLog('> No reliable pattern found. Market too random.');
+    scanLog('> Try a different market or strategy.');
+    setTimeout(() => {
+      alert('No pattern found in this market right now.\n\nTry:\n• A different market\n• A different strategy\n• Wait a few minutes and rescan');
+      goSelectMarket();
+    }, 1500);
+    return;
+  }
+
+  triggerDigit = best;
+  hitRate      = Math.round(bestScore * 100);
+
+  scanLog(`> ✓ PATTERN FOUND! Trigger digit: ${best} | Hit rate: ${hitRate}%`);
+  setTimeout(() => activateSignal(), 1000);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ACTIVATE SIGNAL PAGE
+// ══════════════════════════════════════════════════════════════
+function activateSignal() {
+  const under  = isUnder(selectedStrat);
+  const skip   = skipCount_(selectedStrat);
+
+  // Reset state
+  consecutiveLoss = 0;
+  sigSignals = sigWins = sigLosses = 0;
+  watchState = 'idle';
+  liveTicks  = [];
+  skipCount  = 0;
+
+  showPage('page-signal');
+
+  // Set UI
+  document.getElementById('sig-market-tag').textContent = selectedMarket.name.toUpperCase();
+  document.getElementById('sig-strat-name').textContent = stratLabel(selectedStrat);
+  document.getElementById('sig-strat-name').className   = `signal-strategy-name ${under ? 'under' : 'over'}`;
+
+  document.getElementById('trigger-digit').textContent  = triggerDigit;
+  document.getElementById('trigger-digit').className    = `trigger-digit${under ? '' : ' over-mode'}`;
+  document.getElementById('trigger-card').className     = `trigger-card${under ? '' : ' over-mode'}`;
+
+  document.getElementById('hitrate-val').textContent    = `${hitRate}%`;
+  document.getElementById('trigger-hitrate').className  = `trigger-hit-rate${under ? '' : ' over-mode'}`;
+
+  // Confidence bar
+  const confEl = document.getElementById('conf-fill');
+  confEl.style.width = `${hitRate}%`;
+  confEl.className   = `confidence-fill ${hitRate >= 65 ? 'high' : hitRate >= 45 ? 'medium' : 'low'}`;
+
+  // Pattern preview
+  buildPatternPreview(skip, under);
+
+  updateStats();
+  updateLossIndicator();
+
+  // Subscribe to live ticks
+  DerivAPI.subscribeTicks(selectedMarket.symbol);
+  DerivAPI.on('tick', onLiveTick);
+}
+
+function buildPatternPreview(skip, under) {
+  const preview = document.getElementById('pattern-preview');
+  const overClass = under ? '' : ' over';
+  let html = `<div class="pat-digit trigger-d${overClass}">${triggerDigit}</div>`;
+  for (let i = 0; i < skip; i++) {
+    html += `<span class="pat-arrow">→</span><div class="pat-digit skip-d">?</div>`;
+  }
+  html += `<span class="pat-arrow">→</span><div class="pat-digit result-d">${under ? '0-3' : '6-9'}</div>`;
+  preview.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  LIVE TICK HANDLER — state machine
+// ══════════════════════════════════════════════════════════════
+function onLiveTick(data) {
+  const price = data.quote;
+  const digit = parseInt(String(price).slice(-1));
+  const under = isUnder(selectedStrat);
+  const skip  = skipCount_(selectedStrat);
+
+  addLiveBubble(digit, 'normal');
+
+  switch (watchState) {
+    case 'idle':
+      if (digit === triggerDigit) {
+        // TRIGGER SEEN
+        watchState = 'skipping';
+        skipCount  = 0;
+        markLastBubble('trigger');
+        showAlert('ready', `⚡ TRIGGER ${triggerDigit} DETECTED — TAP TRADE NOW!`);
+      }
+      break;
+
+    case 'skipping':
+      skipCount++;
+      markLastBubble('skip');
+      if (skipCount >= skip) {
+        watchState = 'result';
+        showAlert('enter', `🔥 ENTER NOW → TAP IMMEDIATELY!`);
+      }
+      break;
+
+    case 'result':
+      // This tick is the result
+      const isWin = under ? digit <= 3 : digit >= 6;
+      markLastBubble(isWin ? 'result-win' : 'result-loss');
+
+      sigSignals++;
+      if (isWin) {
+        sigWins++;
+        consecutiveLoss = 0;
+        showAlert('win', `✅ WIN — Digit ${digit} is ${under ? 'under 4' : 'over 5'}`);
+      } else {
+        sigLosses++;
+        consecutiveLoss++;
+        showAlert('loss', `❌ LOSS — Digit ${digit} | Consecutive: ${consecutiveLoss}/3`);
+      }
+
+      updateStats();
+      updateLossIndicator();
+
+      if (consecutiveLoss >= 3) {
+        setTimeout(() => marketChanged(), 1200);
+      } else {
+        watchState = 'idle';
+        setTimeout(() => hideAlert(), 3000);
+      }
+      break;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  LIVE TICK BUBBLES
+// ══════════════════════════════════════════════════════════════
+function addLiveBubble(digit, cls) {
+  const container = document.getElementById('live-ticks');
+  const bubble    = document.createElement('div');
+  bubble.className     = `live-tick-bubble ${cls}`;
+  bubble.textContent   = digit;
+  bubble.dataset.digit = digit;
+  container.appendChild(bubble);
+
+  // Keep max 12 visible
+  const bubbles = container.querySelectorAll('.live-tick-bubble');
+  if (bubbles.length > 12) bubbles[0].remove();
+}
+
+function markLastBubble(cls) {
+  const container = document.getElementById('live-ticks');
+  const bubbles   = container.querySelectorAll('.live-tick-bubble');
+  const last      = bubbles[bubbles.length - 1];
+  if (!last) return;
+  last.className = `live-tick-bubble ${cls}${!isUnder(selectedStrat) ? ' over-mode' : ''}`;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MARKET CHANGED
+// ══════════════════════════════════════════════════════════════
+function marketChanged() {
+  watchState = 'idle';
+  DerivAPI.off('tick', onLiveTick);
+  showAlert('changed', `⚠️ MARKET CHANGED — Pattern no longer valid. Rescan recommended.`);
+  const rescanBtn = document.getElementById('btn-rescan');
+  rescanBtn.classList.add('urgent');
+  rescanBtn.textContent = '🔄 RESCAN NOW — MARKET CHANGED';
+}
+
+// ══════════════════════════════════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════════════════════════════════
+function showAlert(type, msg) {
+  const el = document.getElementById('alert-banner');
+  el.className = `alert-banner ${type}`;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideAlert() {
+  const el = document.getElementById('alert-banner');
+  el.style.display = 'none';
+}
+
+function updateStats() {
+  document.getElementById('stat-signals').textContent = sigSignals;
+  document.getElementById('stat-wins').textContent    = sigWins;
+  document.getElementById('stat-losses').textContent  = sigLosses;
+  const rate = sigSignals > 0 ? Math.round((sigWins/sigSignals)*100)+'%' : '—';
+  document.getElementById('stat-rate').textContent = rate;
+  document.getElementById('stat-rate').className   = `sig-stat-val ${sigWins > sigLosses ? 'green' : sigLosses > sigWins ? 'red' : 'amber'}`;
+}
+
+function updateLossIndicator() {
+  for (let i = 1; i <= 3; i++) {
+    document.getElementById(`loss-${i}`).className = `loss-dot ${i <= consecutiveLoss ? 'filled' : ''}`;
+  }
+}
+
+function setProgress(pct) {
+  document.getElementById('scan-fill').style.width = pct + '%';
+  document.getElementById('scan-pct').textContent  = pct + '%';
+}
+
+function scanLog(msg) {
+  const log  = document.getElementById('scan-log');
+  const line = document.createElement('div');
+  line.className   = 'scan-log-line';
+  line.textContent = msg;
+  log.innerHTML = '';
+  log.appendChild(line);
+}
+
+function showPage(id) {
+  ['page-select','page-scan','page-signal'].forEach(p => {
+    const el = document.getElementById(p);
+    if (!el) return;
+    if (p === 'page-scan') {
+      el.style.display = p === id ? 'flex' : 'none';
+    } else {
+      el.style.display = p === id ? 'block' : 'none';
+    }
+  });
+}
+
+function goSelectMarket() {
+  DerivAPI.off('tick', onLiveTick);
+  DerivAPI.unsubscribeTicks();
+  watchState = 'idle';
+  showPage('page-select');
+}
+
+function goRescan() {
+  DerivAPI.off('tick', onLiveTick);
+  DerivAPI.unsubscribeTicks();
+  watchState = 'idle';
+  const rescanBtn = document.getElementById('btn-rescan');
+  rescanBtn.classList.remove('urgent');
+  rescanBtn.textContent = '🔄 RESCAN';
+  startScan();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MATRIX RAIN
+// ══════════════════════════════════════════════════════════════
+function startMatrix() {
+  const canvas = document.getElementById('matrix-canvas');
+  const ctx    = canvas.getContext('2d');
+  let cols, drops;
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    cols  = Math.floor(canvas.width / 18);
+    drops = Array(cols).fill(1);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+
+  const chars = '0123456789アイウエオカキクケコサシスセソタチツテトナニヌネノ';
+
+  setInterval(() => {
+    ctx.fillStyle = 'rgba(8,11,16,0.07)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#00ff88';
+    ctx.font      = '13px Share Tech Mono';
+
+    drops.forEach((y, i) => {
+      const ch = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(ch, i * 18, y * 18);
+      if (y * 18 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    });
+  }, 50);
+}
+</script>
+</body>
+</html>
