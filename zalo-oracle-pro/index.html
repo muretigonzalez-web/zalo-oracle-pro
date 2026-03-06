@@ -6,84 +6,9 @@
   <title>Zalo Oracle Pro — Login</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@300;400;500;600&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="css/main.css"/>
   <link rel="stylesheet" href="css/login.css"/>
-  <style>
-    /* OAuth login button */
-    .oauth-btn {
-      width: 100%; padding: 16px;
-      background: linear-gradient(135deg, #e84040, #c0392b);
-      border: none; border-radius: 10px;
-      color: #fff; cursor: pointer;
-      font-family: var(--font-display); font-size: 1rem; font-weight: 800;
-      letter-spacing: 1.5px; text-transform: uppercase;
-      display: flex; align-items: center; justify-content: center; gap: 12px;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 20px rgba(232,64,64,0.35);
-      margin-top: 8px;
-    }
-    .oauth-btn:hover  { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(232,64,64,0.45); }
-    .oauth-btn:active { transform: translateY(0); }
-    .oauth-btn.loading { opacity: 0.7; pointer-events: none; }
-
-    .deriv-logo-text {
-      font-family: 'Rajdhani', sans-serif; font-size: 1.1rem;
-      font-weight: 900; color: #fff; letter-spacing: 1px;
-    }
-
-    /* Connecting overlay */
-    .connecting-overlay {
-      display: none; flex-direction: column; align-items: center;
-      justify-content: center; gap: 16px; padding: 30px;
-      text-align: center;
-    }
-    .connecting-overlay.visible { display: flex; }
-    .spin-ring {
-      width: 48px; height: 48px; border-radius: 50%;
-      border: 3px solid rgba(0,212,255,0.2);
-      border-top-color: var(--cyan);
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .connecting-msg {
-      font-family: var(--font-mono); font-size: 0.78rem; color: var(--cyan);
-      letter-spacing: 0.5px;
-    }
-
-    .divider-or {
-      display: flex; align-items: center; gap: 10px;
-      margin: 18px 0;
-    }
-    .divider-or::before, .divider-or::after {
-      content: ''; flex: 1; height: 1px; background: var(--border);
-    }
-    .divider-or span { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); }
-
-    /* Token fallback */
-    .token-fallback { display: none; }
-    .token-fallback.show { display: block; }
-    .toggle-method {
-      font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted);
-      text-align: center; cursor: pointer; padding: 8px 0;
-      text-decoration: underline;
-    }
-    .toggle-method:hover { color: var(--cyan); }
-
-    .acct-list {
-      display: flex; flex-direction: column; gap: 8px; margin: 12px 0;
-    }
-    .acct-item {
-      background: var(--bg-secondary); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: 12px 14px;
-      display: flex; justify-content: space-between; align-items: center;
-      cursor: pointer; transition: var(--transition);
-    }
-    .acct-item:hover { border-color: var(--cyan); }
-    .acct-item.selected { border-color: var(--cyan); background: rgba(0,212,255,0.06); }
-    .acct-name { font-family: var(--font-display); font-size: 0.8rem; font-weight: 700; color: var(--text-primary); }
-    .acct-type { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-muted); }
-  </style>
 </head>
 <body class="login-body">
 
@@ -97,13 +22,13 @@
   <div class="login-left">
     <div class="brand-block">
       <svg width="48" height="48" viewBox="0 0 48 48" fill="none" class="brand-icon">
-        <polygon points="24,3 45,13.5 45,34.5 24,45 3,34.5 3,13.5" stroke="#00d4ff" stroke-width="1.5" fill="rgba(0,212,255,0.07)"/>
-        <polygon points="24,10 38,17.5 38,30.5 24,38 10,30.5 10,17.5" stroke="#f5a623" stroke-width="1" fill="rgba(245,166,35,0.05)"/>
-        <circle cx="24" cy="24" r="5" fill="#00d4ff"/>
-        <circle cx="24" cy="24" r="2" fill="#080c14"/>
+        <polygon points="24,3 45,13.5 45,34.5 24,45 3,34.5 3,13.5" stroke="#38bdf8" stroke-width="1.5" fill="rgba(56,189,248,0.07)"/>
+        <polygon points="24,10 38,17.5 38,30.5 24,38 10,30.5 10,17.5" stroke="#fbbf24" stroke-width="1" fill="rgba(251,191,36,0.05)"/>
+        <circle cx="24" cy="24" r="5" fill="#38bdf8"/>
+        <circle cx="24" cy="24" r="2" fill="#0e1117"/>
       </svg>
       <div>
-        <div class="brand-name">ZALO ORACLE PRO</div>
+        <div class="brand-name">ZALO <span>ORACLE</span> PRO</div>
         <div class="brand-tagline">POWERED BY DERIV API · BETA</div>
       </div>
     </div>
@@ -149,44 +74,50 @@
   <div class="login-right">
     <div class="login-card">
 
-      <!-- DEFAULT: OAuth Button -->
+      <!-- NORMAL LOGIN VIEW -->
       <div id="login-view">
         <div class="login-title">Connect Account</div>
-        <div class="login-subtitle">Sign in with your Deriv account to get started</div>
+        <div class="login-subtitle">Sign in with your Deriv API token to get started</div>
 
-        <button class="oauth-btn mt-24" id="oauth-btn" onclick="doOAuth()">
-          <svg width="22" height="22" viewBox="0 0 40 40" fill="none">
-            <circle cx="20" cy="20" r="18" fill="#fff" opacity="0.15"/>
-            <text x="20" y="27" font-size="18" text-anchor="middle" fill="#fff" font-weight="900" font-family="sans-serif">d</text>
-          </svg>
-          <span class="deriv-logo-text">deriv</span>
-          <span style="opacity:0.7;">|</span>
-          LOGIN WITH DERIV
-        </button>
-
-        <div class="login-error mt-12" id="login-error" style="display:none;">
-          ⚠️ <span id="login-error-text">Something went wrong.</span>
-        </div>
-
-        <div class="divider-or"><span>OR</span></div>
-
-        <!-- Token fallback toggle -->
-        <div class="toggle-method" onclick="toggleTokenMode()">Use API token instead</div>
-
-        <div class="token-fallback mt-12" id="token-fallback">
-          <div class="form-group">
-            <label class="form-label">API Token</label>
-            <div class="token-input-wrap">
-              <input type="password" class="form-input" id="api-token-input"
-                placeholder="Paste Deriv API token"
-                autocomplete="off" spellcheck="false"/>
-              <button class="token-eye-btn" id="token-eye" type="button">👁</button>
+        <!-- Token guide -->
+        <div class="token-guide mt-16">
+          <div class="guide-title">How to get your token:</div>
+          <div class="guide-steps">
+            <div class="guide-step">
+              <span class="step-num">1</span>
+              <span>Go to <strong>app.deriv.com</strong></span>
+            </div>
+            <div class="guide-step">
+              <span class="step-num">2</span>
+              <span>Account Settings → <strong>API Token</strong></span>
+            </div>
+            <div class="guide-step">
+              <span class="step-num">3</span>
+              <span>Create token with <strong>Read + Trade</strong> access</span>
             </div>
           </div>
-          <button class="btn btn-primary btn-full mt-12" id="token-login-btn">
-            ⚡ CONNECT WITH TOKEN
-          </button>
         </div>
+
+        <div class="form-group mt-16">
+          <label class="form-label">API Token</label>
+          <div class="token-input-wrap">
+            <input type="password" class="form-input" id="api-token-input"
+              placeholder="Paste your Deriv API token here"
+              autocomplete="off" spellcheck="false"/>
+            <button class="token-eye-btn" id="token-eye" type="button">👁</button>
+          </div>
+        </div>
+
+        <label class="remember-label mt-12">
+          <input type="checkbox" id="remember-me" checked/>
+          Remember me on this device
+        </label>
+
+        <div class="login-error mt-12" id="login-error"></div>
+
+        <button class="btn btn-primary btn-full btn-lg mt-16" id="login-btn" onclick="doLogin()">
+          🔐 Connect Account
+        </button>
 
         <div class="deriv-branding-row mt-16">
           <div class="status-bar">
@@ -200,25 +131,15 @@
         </div>
       </div>
 
-      <!-- CONNECTING VIEW (shown while processing OAuth callback) -->
-      <div class="connecting-overlay" id="connecting-view">
-        <div class="spin-ring"></div>
+      <!-- CONNECTING VIEW -->
+      <div id="connecting-view" style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:30px;text-align:center;">
+        <div class="spinner"></div>
         <div class="login-title" style="font-size:1.1rem;">Connecting...</div>
-        <div class="connecting-msg" id="connecting-msg">Authorizing with Deriv</div>
-        <div class="status-bar mt-10">
-          <div id="status-dot2" class="connecting"></div>
-          <span id="status-text2" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);">Please wait</span>
+        <div class="loading-text" id="connecting-msg">Connecting with token...</div>
+        <div class="status-bar mt-8">
+          <div id="status-dot"></div>
+          <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);">Please wait</span>
         </div>
-      </div>
-
-      <!-- ACCOUNT SELECTION (if multiple accounts) -->
-      <div id="account-select-view" style="display:none;">
-        <div class="login-title">Choose Account</div>
-        <div class="login-subtitle">Multiple accounts found. Select which to use:</div>
-        <div class="acct-list" id="acct-list"></div>
-        <button class="btn btn-primary btn-full mt-16" id="use-account-btn">
-          Continue →
-        </button>
       </div>
 
     </div>
@@ -231,157 +152,69 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-  // ── If already logged in, skip to dashboard ──────────────────────────────
-  if (localStorage.getItem('zalo_api_token') && !window.location.search.includes('token1')) {
-    window.location.href = 'dashboard.html';
+  // ── AUTO-LOGIN if token saved ──────────────────────────────────────────
+  const saved = localStorage.getItem('zalo_api_token');
+  if (saved) {
+    showConnecting('Reconnecting your session...');
+    connectWithToken(saved);
     return;
   }
 
-  // ── CHECK FOR OAUTH CALLBACK ─────────────────────────────────────────────
-  const accounts = DerivAPI.parseOAuthCallback();
-  if (accounts) {
-    // We got redirected back from Deriv with tokens
-    showConnecting('Processing login...');
-    handleOAuthAccounts(accounts);
-    return;
-  }
-
-  // ── NORMAL LOGIN PAGE ────────────────────────────────────────────────────
-
-  // Token visibility toggle
+  // ── NORMAL PAGE SETUP ──────────────────────────────────────────────────
   const eyeBtn   = document.getElementById('token-eye');
   const tokenInp = document.getElementById('api-token-input');
-  if (eyeBtn && tokenInp) {
-    eyeBtn.addEventListener('click', () => {
-      const show = tokenInp.type === 'password';
-      tokenInp.type      = show ? 'text' : 'password';
-      eyeBtn.textContent = show ? '🙈' : '👁';
-    });
-    tokenInp.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') document.getElementById('token-login-btn')?.click();
-    });
-  }
 
-  // Token login button
-  document.getElementById('token-login-btn')?.addEventListener('click', () => {
-    const token = document.getElementById('api-token-input')?.value.trim();
-    if (!token) { showError('Please paste your API token'); return; }
-    showConnecting('Connecting with token...');
-    loginWithToken(token);
+  eyeBtn?.addEventListener('click', () => {
+    const show = tokenInp.type === 'password';
+    tokenInp.type = show ? 'text' : 'password';
+    eyeBtn.textContent = show ? '🙈' : '👁';
+  });
+
+  tokenInp?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doLogin();
   });
 });
 
-// ── OAUTH BUTTON ────────────────────────────────────────────────────────────
-function doOAuth() {
-  const btn = document.getElementById('oauth-btn');
-  if (btn) { btn.classList.add('loading'); btn.textContent = 'Redirecting...'; }
-  setTimeout(() => DerivAPI.redirectToOAuth(), 200);
+// ── MAIN LOGIN ─────────────────────────────────────────────────────────────
+function doLogin() {
+  const token = document.getElementById('api-token-input')?.value.trim();
+  if (!token) { showError('Please paste your API token'); return; }
+
+  const remember = document.getElementById('remember-me')?.checked;
+  showConnecting('Connecting with token...');
+  connectWithToken(token, remember);
 }
 
-// ── TOGGLE TOKEN MODE ────────────────────────────────────────────────────────
-function toggleTokenMode() {
-  const el = document.getElementById('token-fallback');
-  if (el) el.classList.toggle('show');
-}
+// ── CORE CONNECT ────────────────────────────────────────────────────────────
+function connectWithToken(token, remember = true) {
+  DerivAPI.connect();
 
-// ── HANDLE OAUTH ACCOUNTS ────────────────────────────────────────────────────
-function handleOAuthAccounts(accounts) {
-  // If only one account or one demo + one real → auto pick demo
-  const demo = accounts.find(a => a.loginid.toUpperCase().startsWith('VRT'));
-  const real = accounts.find(a => a.loginid.toUpperCase().startsWith('CR'));
-
-  if (accounts.length === 1 || (demo && accounts.length <= 2)) {
-    // Auto-login with preferred
-    const preferred = demo || accounts[0];
-    loginWithAccount(preferred, accounts);
-    return;
-  }
-
-  // Multiple non-obvious accounts — show picker
-  showAccountPicker(accounts);
-}
-
-// ── LOGIN WITH SPECIFIC ACCOUNT ──────────────────────────────────────────────
-function loginWithAccount(preferred, allAccounts) {
-  updateConnectingMsg(`Connecting as ${preferred.loginid}...`);
-
-  // Save everything
-  localStorage.setItem('zalo_all_accounts', JSON.stringify(allAccounts));
-  localStorage.setItem('zalo_api_token',    preferred.token);
-  localStorage.setItem('zalo_loginid',      preferred.loginid);
-  localStorage.setItem('zalo_currency',     preferred.currency);
-
-  // Connect and authorize
-  DerivAPI.connect(preferred.token);
+  DerivAPI.on('open', () => {
+    DerivAPI.authorize(token);
+  });
 
   DerivAPI.on('authorized', (data) => {
-    if (data?.balance !== undefined) {
-      localStorage.setItem('zalo_balance', data.balance);
-    }
+    // Save session
+    if (remember) localStorage.setItem('zalo_api_token', token);
+    localStorage.setItem('zalo_loginid',  data.loginid  || '');
+    localStorage.setItem('zalo_currency', data.currency || 'USD');
+    localStorage.setItem('zalo_balance',  data.balance  || 0);
+    localStorage.setItem('zalo_account',  JSON.stringify(data));
+
     updateConnectingMsg('✔ Connected! Loading dashboard...');
-    setTimeout(() => { window.location.href = 'dashboard.html'; }, 700);
+    setTimeout(() => { window.location.href = 'dashboard.html'; }, 600);
   });
 
   DerivAPI.on('error', (err) => {
-    if (err.code === 'InvalidToken' || err.code === 'AuthorizationRequired') {
+    if (err.code === 'InvalidToken' || err.code === 'AuthorizationRequired' || err.type === 'authorize') {
+      localStorage.removeItem('zalo_api_token'); // clear bad token
       showView('login-view');
-      showError('Login failed: ' + err.message);
+      showError('Invalid token. Please get a fresh one from app.deriv.com → API Token');
     }
   });
 }
 
-// ── LOGIN WITH RAW TOKEN ──────────────────────────────────────────────────────
-function loginWithToken(token) {
-  DerivAPI.connect(token);
-
-  DerivAPI.on('authorized', (data) => {
-    localStorage.setItem('zalo_api_token', token);
-    localStorage.setItem('zalo_loginid',   data.loginid  || '');
-    localStorage.setItem('zalo_currency',  data.currency || 'USD');
-    localStorage.setItem('zalo_balance',   data.balance  || 0);
-    updateConnectingMsg('✔ Connected! Loading dashboard...');
-    setTimeout(() => { window.location.href = 'dashboard.html'; }, 700);
-  });
-
-  DerivAPI.on('error', (err) => {
-    if (err.code === 'InvalidToken' || err.code === 'AuthorizationRequired') {
-      showView('login-view');
-      showError('Invalid token. Please try again.');
-    }
-  });
-}
-
-// ── ACCOUNT PICKER ────────────────────────────────────────────────────────────
-function showAccountPicker(accounts) {
-  showView('account-select-view');
-  let selected = accounts[0];
-
-  const list = document.getElementById('acct-list');
-  list.innerHTML = accounts.map((a, i) => `
-    <div class="acct-item ${i === 0 ? 'selected' : ''}" data-idx="${i}" onclick="selectAcct(this, ${i})">
-      <div>
-        <div class="acct-name">${a.loginid}</div>
-        <div class="acct-type">${a.loginid.startsWith('VRT') ? '🔵 Demo Account' : '🟢 Real Account'} · ${a.currency}</div>
-      </div>
-      <span style="color:var(--cyan);font-size:1.2rem;">${i === 0 ? '✔' : ''}</span>
-    </div>`).join('');
-
-  document.getElementById('use-account-btn').onclick = () => {
-    loginWithAccount(selected, accounts);
-  };
-
-  window.selectAcct = (el, idx) => {
-    document.querySelectorAll('.acct-item').forEach(e => {
-      e.classList.remove('selected');
-      e.querySelector('span').textContent = '';
-    });
-    el.classList.add('selected');
-    el.querySelector('span').textContent = '✔';
-    selected = accounts[idx];
-  };
-}
-
-// ── UI HELPERS ─────────────────────────────────────────────────────────────────
+// ── UI HELPERS ──────────────────────────────────────────────────────────────
 function showConnecting(msg) {
   showView('connecting-view');
   updateConnectingMsg(msg);
@@ -393,25 +226,16 @@ function updateConnectingMsg(msg) {
 }
 
 function showView(id) {
-  ['login-view','connecting-view','account-select-view'].forEach(v => {
-    const el = document.getElementById(v);
-    if (!el) return;
-    if (v === 'connecting-view') {
-      el.classList.toggle('visible', v === id);
-    } else {
-      el.style.display = v === id ? 'block' : 'none';
-    }
-  });
+  document.getElementById('login-view').style.display       = id === 'login-view'       ? 'block' : 'none';
+  document.getElementById('connecting-view').style.display  = id === 'connecting-view'  ? 'flex'  : 'none';
 }
 
 function showError(msg) {
-  const err = document.getElementById('login-error');
-  const txt = document.getElementById('login-error-text');
-  if (err && txt) {
-    txt.textContent  = msg;
-    err.style.display = 'block';
-    setTimeout(() => { err.style.display = 'none'; }, 7000);
-  }
+  const el = document.getElementById('login-error');
+  if (!el) return;
+  el.textContent   = '⚠ ' + msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 8000);
 }
 </script>
 </body>
