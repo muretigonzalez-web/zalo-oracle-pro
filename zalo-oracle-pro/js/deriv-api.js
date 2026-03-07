@@ -25,7 +25,12 @@ const DerivAPI = (() => {
   };
 
   const off = (event, fn) => {
-    if (handlers[event]) handlers[event] = handlers[event].filter(f => f !== fn);
+    if (!handlers[event]) return;
+    if (fn) {
+      handlers[event] = handlers[event].filter(f => f !== fn);
+    } else {
+      handlers[event] = []; // clear all listeners for this event
+    }
   };
 
   const emit = (event, data) => {
