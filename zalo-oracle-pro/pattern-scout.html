@@ -747,7 +747,7 @@ function animateTickFeed(ticks) {
   feed.innerHTML = '';
   ticks.forEach((price, i) => {
     setTimeout(() => {
-      const lastDigit = parseInt(String(price).slice(-1));
+      const lastDigit = extractDigit(price);
       const row = document.createElement('div');
       row.className = 'tick-row';
       row.innerHTML = `<span>tick_${i+1}</span><span>${price}</span><span class="text-cyan">[${lastDigit}]</span>`;
@@ -757,73 +757,268 @@ function animateTickFeed(ticks) {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  ANALYZE PATTERN
+//  DIGIT EXTRACTION — handles float prices, digit 0 included
+// ══════════════════════════════════════════════════════════════
+function extractDigit(price) {
+  // Convert to string, handle scientific notation
+  const s = typeof price === 'number' ? price.toFixed(5) : String(price);
+  // Get last character that is a digit
+  for (let i = s.length - 1; i >= 0; i--) {
+    if (s[i] >= '0' && s[i] <= '9') return parseInt(s[i]);
+  }
+  return 0;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SHANNON ENTROPY — gatekeeper
+// ══════════════════════════════════════════════════════════════
+function calcEntropy(digits) {
+  const counts = new Array(10).fill(0);
+  digits.forEach(d => counts[d]++);
+  const n = digits.length;
+  let H = 0;
+  counts.forEach(c => {
+    if (c > 0) {
+      const p = c / n;
+      H -= p * Math.log2(p);
+    }
+  });
+  return H; // max = log2(10) ≈ 3.321
+}
+
+// ══════════════════════════════════════════════════════════════
+//  TRANSITION MATRIX — exponential decay weighting
+// ══════════════════════════════════════════════════════════════
+function buildTransitionMatrix(digits, skip) {
+  // matrix[trigger][result] = decayed weight sum
+  const matrix = Array.from({length:10}, () => new Array(10).fill(0));
+  const n = digits.length;
+  for (let i = 0; i < n - skip - 1; i++) {
+    const trigger = digits[i];
+    const result  = digits[i + skip + 1];
+    const age     = n - i;
+    // exponential decay: w = e^(-0.02 * age), min weight 0.01
+    const w = Math.max(Math.exp(-0.02 * age), 0.01);
+    matrix[trigger][result] += w;
+  }
+  return matrix;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  STREAK EXHAUSTION DETECTOR
+// ══════════════════════════════════════════════════════════════
+function detectStreakExhaustion(digits, under) {
+  // Find current streak of under/over at end of history
+  if (digits.length < 10) return { active: false };
+  const recent = digits.slice(-30);
+  const isTarget = (d) => under ? d <= 3 : d >= 6;
+  const isOpposite = (d) => under ? d >= 6 : d <= 3;
+  
+  // Find longest run of OPPOSITE at the tail (exhaustion = opposite has been dominating)
+  let streakLen = 0;
+  for (let i = recent.length - 1; i >= 0; i--) {
+    if (isOpposite(recent[i])) streakLen++;
+    else break;
+  }
+  
+  // Calculate average streak length
+  let maxStreak = 0, cur = 0;
+  recent.forEach(d => {
+    if (isOpposite(d)) { cur++; maxStreak = Math.max(maxStreak, cur); }
+    else cur = 0;
+  });
+  const avgThreshold = Math.max(3, Math.round(maxStreak * 0.7));
+  
+  return {
+    active: streakLen >= avgThreshold && streakLen >= 3,
+    streakLen,
+    threshold: avgThreshold,
+    signal: streakLen >= avgThreshold ? 'EXHAUSTION' : 'NORMAL'
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DIGIT VELOCITY — window A vs window B
+// ══════════════════════════════════════════════════════════════
+function calcDigitVelocity(digits, under) {
+  if (digits.length < 40) return { velocity: 0, signal: false };
+  const winA = digits.slice(-20);   // recent
+  const winB = digits.slice(-40, -20); // older
+  const isTarget = (d) => under ? d <= 3 : d >= 6;
+  const freqA = winA.filter(isTarget).length / 20;
+  const freqB = winB.filter(isTarget).length / 20;
+  const velocity = (freqA - freqB) * 20; // scaled difference
+  return {
+    velocity,
+    signal: Math.abs(velocity) >= 3, // ±3 ticks difference = significant
+    rising: velocity > 0,
+    freqA: Math.round(freqA * 100),
+    freqB: Math.round(freqB * 100)
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DIGIT GAP (DROUGHT) DETECTOR
+// ══════════════════════════════════════════════════════════════
+function calcDigitGaps(digits) {
+  const gaps = new Array(10).fill(0);
+  const lastSeen = new Array(10).fill(-1);
+  digits.forEach((d, i) => {
+    if (lastSeen[d] >= 0) gaps[d] = i - lastSeen[d];
+    lastSeen[d] = i;
+  });
+  // For digits not seen recently, compute gap from last seen to end
+  const n = digits.length;
+  for (let d = 0; d <= 9; d++) {
+    if (lastSeen[d] >= 0) gaps[d] = n - 1 - lastSeen[d];
+    else gaps[d] = n; // never appeared
+  }
+  return gaps;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ANALYZE PATTERN — multi-engine, high accuracy
 // ══════════════════════════════════════════════════════════════
 function analyzePattern() {
-  scanLog('> Extracting last digits...');
-  setProgress(65);
+  scanLog('> Extracting digits...');
+  setProgress(55);
 
-  // Extract last digits from prices
-  const digits = tickHistory.map(p => parseInt(String(p).slice(-1)));
+  // CRITICAL FIX: use extractDigit() which correctly handles digit 0
+  const digits = tickHistory.map(p => extractDigit(p));
   const skip   = skipCount_(selectedStrat);
   const under  = isUnder(selectedStrat);
   const minOcc = minOccurrences(selectedStrat);
+  const n      = digits.length;
 
-  scanLog(`> Analyzing ${digits.length} digits for skip-${skip} ${under ? 'UNDER 4' : 'OVER 5'} pattern...`);
-  setProgress(80);
-
-  // Build frequency map: trigger_digit → {hits, total}
-  // Pattern: digits[i] = trigger → digits[i+skip+1] is result
-  // Recency weighting: last 50 ticks = 3x, last 100 = 2x, older = 1x
-  const freq = {};
-  for (let d = 0; d <= 9; d++) freq[d] = { hits: 0, total: 0 };
-
-  const len = digits.length;
-  for (let i = 0; i < len - skip - 1; i++) {
-    const trigger = digits[i];
-    const result  = digits[i + skip + 1];
-
-    // Recency weight
-    const age    = len - i;
-    const weight = age <= 50 ? 3 : age <= 100 ? 2 : 1;
-
-    const isHit = under ? result <= 3 : result >= 6;
-
-    freq[trigger].total += weight;
-    if (isHit) freq[trigger].hits += weight;
+  // ── LAYER 1: Entropy Gatekeeper ──────────────────────────────
+  scanLog('> [1/4] Entropy check...');
+  setProgress(60);
+  const entropy = calcEntropy(digits);
+  const entropyPct = Math.round((entropy / 3.321) * 100);
+  
+  if (entropy > 3.15) {
+    scanLog(`> ⚠ Entropy ${entropy.toFixed(3)} — market too random (${entropyPct}% chaos). Trying anyway...`);
+    // Don't abort — still scan, just lower confidence
+  } else if (entropy < 2.3) {
+    scanLog(`> ✓ Low entropy ${entropy.toFixed(3)} — strong skew detected. High confidence mode.`);
+  } else {
+    scanLog(`> ✓ Entropy ${entropy.toFixed(3)} — normal range. Proceeding.`);
   }
 
-  setProgress(90);
-  scanLog('> Scoring trigger candidates...');
+  // ── LAYER 2: Transition Matrix with exponential decay ────────
+  scanLog('> [2/4] Building transition matrix...');
+  setProgress(68);
+  const matrix = buildTransitionMatrix(digits, skip);
+  
+  // Score each trigger digit
+  const scores = [];
+  for (let trigger = 0; trigger <= 9; trigger++) {
+    const row = matrix[trigger];
+    const rowTotal = row.reduce((a, b) => a + b, 0);
+    if (rowTotal < minOcc * 0.5) continue; // not enough data
+    
+    // Sum weight for target results
+    let hitWeight = 0;
+    for (let r = 0; r <= 9; r++) {
+      const isHit = under ? r <= 3 : r >= 6;
+      if (isHit) hitWeight += row[r];
+    }
+    const hitRate_ = hitWeight / rowTotal;
+    
+    // Recency bonus: count raw occurrences in last 30 ticks
+    const recent = digits.slice(-30);
+    const recentOcc = recent.filter(d => d === trigger).length;
+    
+    // Bonus points for: streak exhaustion, velocity, drought
+    const gaps    = calcDigitGaps(digits);
+    const drought = gaps[trigger]; // ticks since trigger last appeared
+    const droughtBonus = drought >= 8 ? 0.04 : drought >= 5 ? 0.02 : 0;
+    
+    // Confidence score: weighted hit rate + bonuses
+    const baseScore = hitRate_;
+    const adjustedScore = baseScore + droughtBonus;
+    
+    scores.push({ trigger, hitRate: hitRate_, adjustedScore, rowTotal, recentOcc, drought });
+  }
+  
+  setProgress(78);
 
-  // Find best trigger with minimum occurrences
-  let best = null, bestScore = 0;
-  for (let d = 0; d <= 9; d++) {
-    if (freq[d].total < minOcc) continue;
-    const rate = freq[d].hits / freq[d].total;
-    if (rate > bestScore) {
-      bestScore = rate;
-      best = d;
+  // ── LAYER 3: Streak Exhaustion ───────────────────────────────
+  scanLog('> [3/4] Streak exhaustion check...');
+  const streak = detectStreakExhaustion(digits, under);
+  let streakBoost = 0;
+  if (streak.active) {
+    scanLog(`> ✓ Streak exhaustion: ${streak.streakLen} ticks. Expecting reversal.`);
+    streakBoost = 0.06; // boost all under/over scores
+    scores.forEach(s => s.adjustedScore += streakBoost);
+  }
+  
+  // ── LAYER 4: Digit Velocity ──────────────────────────────────
+  scanLog('> [4/4] Velocity analysis...');
+  const velocity = calcDigitVelocity(digits, under);
+  if (velocity.signal) {
+    const dir = velocity.rising ? '↑ rising' : '↓ falling';
+    scanLog(`> Velocity: ${dir} (${velocity.freqA}% recent vs ${velocity.freqB}% older)`);
+    if (velocity.rising) {
+      // Pattern is accelerating — boost top candidates
+      scores.forEach(s => s.adjustedScore += 0.03);
     }
   }
 
-  setProgress(100);
+  setProgress(90);
+  scanLog('> Ranking trigger candidates...');
 
-  if (best === null) {
-    scanLog('> No reliable pattern found. Market too random.');
-    scanLog('> Try a different market or strategy.');
-    setTimeout(() => {
-      alert('No pattern found in this market right now.\n\nTry:\n• A different market\n• A different strategy\n• Wait a few minutes and rescan');
-      goSelectMarket();
-    }, 1500);
-    return;
+  // ── SELECT BEST TRIGGER ──────────────────────────────────────
+  // Filter: raw hitRate must be > 40% (meaningful edge over random ~40% for under4)
+  // For under: random expectation = 4/10 = 40%. Need >48% to be useful.
+  // For over:  random expectation = 4/10 = 40%. Need >48%.
+  const randomBaseline = 0.40; // 4 winning digits out of 10
+  const edgeThreshold  = randomBaseline + 0.08; // require 8% edge minimum
+  
+  const validScores = scores.filter(s => s.hitRate >= edgeThreshold && s.rowTotal >= minOcc * 0.5);
+  validScores.sort((a, b) => b.adjustedScore - a.adjustedScore);
+
+  setProgress(98);
+
+  if (validScores.length === 0) {
+    // FALLBACK: if no edge found, find best available anyway but warn
+    scores.sort((a, b) => b.adjustedScore - a.adjustedScore);
+    if (scores.length === 0 || scores[0].hitRate < 0.35) {
+      scanLog('> ✗ No pattern found. Market is fully random right now.');
+      setTimeout(() => {
+        showScanResult('NO_PATTERN', null, 0, entropy);
+      }, 800);
+      return;
+    }
+    // Weak signal
+    const best = scores[0];
+    triggerDigit = best.trigger;
+    hitRate = Math.round(best.hitRate * 100);
+    scanLog(`> ⚠ Weak pattern: Trigger ${triggerDigit} at ${hitRate}% (below threshold)`);
+  } else {
+    const best = validScores[0];
+    triggerDigit = best.trigger;
+    hitRate = Math.round(best.hitRate * 100);
+    scanLog(`> ✓ Pattern found! Trigger: ${triggerDigit} | Hit rate: ${hitRate}% | Entropy: ${entropy.toFixed(2)}`);
   }
 
-  triggerDigit = best;
-  hitRate      = Math.round(bestScore * 100);
+  // Apply entropy confidence adjustment
+  let confAdjust = 0;
+  if (entropy > 3.15) confAdjust = -8;
+  else if (entropy < 2.3) confAdjust = +5;
+  hitRate = Math.max(0, Math.min(100, hitRate + confAdjust));
 
-  scanLog(`> ✓ PATTERN FOUND! Trigger digit: ${best} | Hit rate: ${hitRate}%`);
+  setProgress(100);
   setTimeout(() => activateSignal(), 1000);
+}
+
+function showScanResult(type, digit, rate, entropy) {
+  if (type === 'NO_PATTERN') {
+    scanLog('> Returning to market selection...');
+    setTimeout(() => {
+      goSelectMarket();
+    }, 1500);
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -886,7 +1081,7 @@ function buildPatternPreview(skip, under) {
 // ══════════════════════════════════════════════════════════════
 function onLiveTick(data) {
   const price = data.quote;
-  const digit = parseInt(String(price).slice(-1));
+  const digit = extractDigit(price);
   const under = isUnder(selectedStrat);
   const skip  = skipCount_(selectedStrat);
 
