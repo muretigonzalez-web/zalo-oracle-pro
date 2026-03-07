@@ -9,12 +9,13 @@ const Ticks = (() => {
 
   // ─── STATE ────────────────────────────────────────────────────────────────
   let currentSymbol  = '1HZ10V';     // Active market symbol
-  let tickHistory    = [];           // Array of last N tick prices
+  let tickHistory    = [];           // Array of last N tick prices (floats)
   let tickTimes      = [];           // Matching timestamps (epoch seconds)
   let maxHistory     = 1000;         // Max ticks to keep in memory
   let lastPrice      = null;         // Most recent price
   let lastDigit      = null;         // Last digit of most recent price
   let isSubscribed   = false;        // Whether we're currently subscribed
+  let currentPipSize = 2;            // Decimal places for current market (from pip_size)
 
   // Callbacks registered by other modules
   const onTickCallbacks    = [];
@@ -47,7 +48,9 @@ const Ticks = (() => {
 
       tickHistory = data.prices.slice(-maxHistory);
       tickTimes   = (data.times || []).slice(-maxHistory);
-      Utils.terminalLog('terminal', `Loaded ${tickHistory.length} ticks for ${currentSymbol}`, 'success');
+      // Capture pip_size from history response for accurate digit extraction
+      if (data.pip_size) currentPipSize = data.pip_size;
+      Utils.terminalLog('terminal', `Loaded ${tickHistory.length} ticks for ${currentSymbol} (dp:${currentPipSize})`, 'success');
 
       // Fire history callbacks — pass {prices, times} object
       onHistoryCallbacks.forEach(fn => fn({ prices: [...tickHistory], times: [...tickTimes] }));
@@ -59,8 +62,10 @@ const Ticks = (() => {
     DerivAPI.on('tick', (data) => {
       if (!data || data.symbol !== currentSymbol) return;
 
+      // Preserve pip_size for correct digit extraction (trailing zero fix)
+      if (data.pip_size) currentPipSize = data.pip_size;
       const price = parseFloat(data.quote);
-      const digit = Utils.getLastDigit(price);
+      const digit = Utils.getLastDigit(price, currentPipSize);
       const prev  = lastPrice;
 
       lastPrice  = price;
@@ -145,9 +150,12 @@ const Ticks = (() => {
   // Get last N ticks
   const getLastN = (n = 100) => tickHistory.slice(-n);
 
+  // Get current pip size
+  const getPipSize = () => currentPipSize;
+
   // Get digit stats for last N ticks
   const getDigitStats = (n = 100) => {
-    return Utils.calcDigitStats(getLastN(n));
+    return Utils.calcDigitStats(getLastN(n), currentPipSize);
   };
 
   // Get even/odd stats for last N ticks
@@ -176,6 +184,7 @@ const Ticks = (() => {
     getDigitStats,
     getEvenOdd,
     getOverUnder,
+    getPipSize,
   };
 
 })();
