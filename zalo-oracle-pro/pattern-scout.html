@@ -450,36 +450,6 @@
   <!-- Markets -->
   <div style="max-width:900px;margin:0 auto;padding-bottom:120px;">
 
-    <div class="market-section">
-      <div class="market-section-title">⚡ Volatility Indices (2s tick)</div>
-      <div class="market-grid" id="grid-vol"></div>
-    </div>
-
-    <div class="market-section">
-      <div class="market-section-title">🚀 Volatility Indices (1s tick — Fast)</div>
-      <div class="market-grid" id="grid-vol1s"></div>
-    </div>
-
-    <div class="market-section">
-      <div class="market-section-title">💥 Crash Indices</div>
-      <div class="market-grid" id="grid-crash"></div>
-    </div>
-
-    <div class="market-section">
-      <div class="market-section-title">🚀 Boom Indices</div>
-      <div class="market-grid" id="grid-boom"></div>
-    </div>
-
-    <div class="market-section">
-      <div class="market-section-title">🔀 Step Indices</div>
-      <div class="market-grid" id="grid-step"></div>
-    </div>
-
-    <div class="market-section">
-      <div class="market-section-title">⚡ Jump Indices</div>
-      <div class="market-grid" id="grid-jump"></div>
-    </div>
-
   </div>
 
   <div class="scan-launch">
@@ -628,30 +598,6 @@ const MARKETS = {
     { symbol: '1HZ90V',  name: 'Volatility 90 (1s)',  speed: '1s tick' },
     { symbol: '1HZ100V', name: 'Volatility 100 (1s)', speed: '1s tick' },
   ],
-  'grid-crash': [
-    { symbol: 'CRASH300N', name: 'Crash 300',  speed: 'spike/300' },
-    { symbol: 'CRASH500',  name: 'Crash 500',  speed: 'spike/500' },
-    { symbol: 'CRASH600',  name: 'Crash 600',  speed: 'spike/600' },
-    { symbol: 'CRASH900',  name: 'Crash 900',  speed: 'spike/900' },
-    { symbol: 'CRASH1000', name: 'Crash 1000', speed: 'spike/1000' },
-  ],
-  'grid-boom': [
-    { symbol: 'BOOM300N', name: 'Boom 300',  speed: 'spike/300' },
-    { symbol: 'BOOM500',  name: 'Boom 500',  speed: 'spike/500' },
-    { symbol: 'BOOM600',  name: 'Boom 600',  speed: 'spike/600' },
-    { symbol: 'BOOM900',  name: 'Boom 900',  speed: 'spike/900' },
-    { symbol: 'BOOM1000', name: 'Boom 1000', speed: 'spike/1000' },
-  ],
-  'grid-step': [
-    { symbol: 'stpRNG', name: 'Step Index', speed: 'fixed step' },
-  ],
-  'grid-jump': [
-    { symbol: 'JD10',  name: 'Jump 10',  speed: 'jump index' },
-    { symbol: 'JD25',  name: 'Jump 25',  speed: 'jump index' },
-    { symbol: 'JD50',  name: 'Jump 50',  speed: 'jump index' },
-    { symbol: 'JD75',  name: 'Jump 75',  speed: 'jump index' },
-    { symbol: 'JD100', name: 'Jump 100', speed: 'jump index' },
-  ],
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -742,29 +688,41 @@ function runScan() {
   scanLog('> Connecting to Deriv WebSocket...');
   setProgress(5);
 
-  DerivAPI.on('open', () => {
-    scanLog('> Connected. Fetching last 100 ticks...');
-    setProgress(15);
-    DerivAPI.getTickHistory(selectedMarket.symbol, 100);
-  });
+  // Clear old listeners to avoid stacking
+  DerivAPI.off('history');
+  DerivAPI.off('error');
 
   DerivAPI.on('history', (data) => {
     tickHistory = data.prices || [];
     if (tickHistory.length < 20) {
-      scanLog('> ERROR: Not enough tick data received');
+      scanLog('> ERROR: Not enough tick data. Try another market.');
+      setTimeout(() => goSelectMarket(), 2500);
       return;
     }
     setProgress(50);
-    scanLog(`> Received ${tickHistory.length} ticks`);
+    scanLog(`> Received ${tickHistory.length} ticks. Analyzing...`);
     animateTickFeed(tickHistory.slice(-20));
     setTimeout(() => analyzePattern(), 800);
   });
 
   DerivAPI.on('error', (err) => {
-    scanLog(`> ERROR: ${err.message}`);
+    scanLog(`> ERROR: ${err.message || err.code || 'Unknown error'}`);
   });
 
-  DerivAPI.connect();
+  // If already connected, fetch immediately — don't wait for 'open'
+  const doFetch = () => {
+    scanLog('> Connected. Fetching last 100 ticks...');
+    setProgress(15);
+    DerivAPI.getTickHistory(selectedMarket.symbol, 100);
+  };
+
+  if (DerivAPI.isConnected) {
+    doFetch();
+  } else {
+    DerivAPI.off('open');
+    DerivAPI.on('open', doFetch);
+    DerivAPI.connect();
+  }
 }
 
 function animateTickFeed(ticks) {
