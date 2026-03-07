@@ -192,6 +192,8 @@ const DerivAPI = (() => {
     buyContract, subscribeBalance, subscribeOpenContract, subscribeOpenContracts,
     forget, forgetAll,
     get isAuthorized() { return isAuthorized; },
+    get socket() { return socket; },
+    get isConnected() { return socket && socket.readyState === WebSocket.OPEN; },
   };
 
 })();
