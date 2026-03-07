@@ -113,9 +113,10 @@ const Utils = (() => {
   };
 
   // Get the most and least frequent digit from stats
+  // FIX: start from i=0 so digit 0 is included in hot/cold comparison
   const getHotColdDigits = (percentages) => {
     let hot = 0, cold = 0;
-    for (let i = 1; i <= 9; i++) {
+    for (let i = 0; i <= 9; i++) {
       if (percentages[i] > percentages[hot])  hot  = i;
       if (percentages[i] < percentages[cold]) cold = i;
     }
