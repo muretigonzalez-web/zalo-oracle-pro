@@ -339,10 +339,11 @@
       <div class="card">
         <div class="card-header">
           <span class="card-title">🎯 Digit Distribution</span>
-          <div class="flex flex-gap-8">
+          <div class="flex flex-gap-8" style="align-items:center;">
             <span class="mono text-muted" id="dig-ticks-label" style="font-size:0.68rem;">100 ticks</span>
             <span class="badge badge-red" id="dig-cold-badge">Cold: -</span>
             <span class="badge badge-green" id="dig-hot-badge">Hot: -</span>
+            <span id="dig-entropy-badge" style="font-family:var(--font-mono);font-size:0.62rem;padding:3px 8px;border-radius:4px;border:1px solid var(--border);color:var(--text-muted);">H: —</span>
           </div>
         </div>
         <!-- Digit circles -->
@@ -556,12 +557,17 @@
           <div class="form-group mt-16">
             <label class="form-label">Trade Strategy</label>
             <select class="form-select" id="sig-strategy">
+              <option value="transition-matrix">🎯 Transition Matrix (High Accuracy)</option>
+              <option value="digit-velocity">⚡ Digit Velocity Signal</option>
+              <option value="streak-exhaustion">🔄 Streak Exhaustion Reversal</option>
+              <option value="digit-drought">💧 Digit Drought / Gap</option>
               <option value="even-odd">Even / Odd</option>
               <option value="over-under">Over / Under</option>
               <option value="matches-differs">Matches / Differs</option>
               <option value="rise-fall">Rise / Fall</option>
             </select>
           </div>
+          <div id="sig-entropy-badge" style="display:none;margin-top:10px;padding:8px 12px;border-radius:6px;font-family:var(--font-mono);font-size:0.68rem;border:1px solid;"></div>
           <div class="form-group mt-12">
             <label class="form-label">Entry Sensitivity</label>
             <select class="form-select" id="sig-sensitivity">
@@ -805,6 +811,19 @@ document.addEventListener('DOMContentLoaded', () => {
     set('dig-ticks-label', `${ticks.length} ticks`);
     const hb = document.getElementById('dig-hot-badge');  if (hb) hb.textContent  = `Hot: ${hot} (${stats.percentages[hot]}%)`;
     const cb = document.getElementById('dig-cold-badge'); if (cb) cb.textContent = `Cold: ${cold} (${stats.percentages[cold]}%)`;
+    // Entropy display
+    const digEntBadge = document.getElementById('dig-entropy-badge');
+    if (digEntBadge) {
+      const allDigits = ticks.map(p => { const s=typeof p==='number'?p.toFixed(5):String(p); for(let i=s.length-1;i>=0;i--){if(s[i]>='0'&&s[i]<='9')return parseInt(s[i]);}return 0; });
+      const cnts = new Array(10).fill(0); allDigits.forEach(d=>cnts[d]++);
+      const nn = allDigits.length; let H=0;
+      cnts.forEach(c=>{ if(c>0){const pp=c/nn; H-=pp*Math.log2(pp);} });
+      const hPct = Math.round((H/3.321)*100);
+      const hColor = H > 3.15 ? 'var(--red)' : H < 2.3 ? 'var(--green)' : 'var(--gold)';
+      digEntBadge.style.color = hColor; digEntBadge.style.borderColor = hColor;
+      digEntBadge.textContent = `H:${H.toFixed(2)} (${hPct}%)`;
+      digEntBadge.title = `Shannon Entropy: ${H.toFixed(3)}. <2.3=skewed(good), >3.15=random(bad)`;
+    }
 
     for (let i = 0; i <= 9; i++) {
       const circle = document.getElementById(`dcl-${i}`);
@@ -961,11 +980,71 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ── SIGNAL ANALYZER ─────────────────────────────────────────────
+  // ── ANALYSIS ENGINE HELPERS (mirrors Pattern Scout engine) ──────────────
+  const sigExtractDigit = (price) => {
+    const s = typeof price === 'number' ? price.toFixed(5) : String(price);
+    for (let i = s.length - 1; i >= 0; i--) {
+      if (s[i] >= '0' && s[i] <= '9') return parseInt(s[i]);
+    }
+    return 0;
+  };
+
+  const sigCalcEntropy = (digits) => {
+    const counts = new Array(10).fill(0);
+    digits.forEach(d => counts[d]++);
+    const n = digits.length;
+    let H = 0;
+    counts.forEach(c => { if (c > 0) { const p = c/n; H -= p * Math.log2(p); } });
+    return H;
+  };
+
+  const sigBuildMatrix = (digits, skip) => {
+    const matrix = Array.from({length:10}, () => new Array(10).fill(0));
+    const n = digits.length;
+    for (let i = 0; i < n - skip - 1; i++) {
+      const trigger = digits[i], result = digits[i + skip + 1];
+      const age = n - i;
+      const w = Math.max(Math.exp(-0.02 * age), 0.01);
+      matrix[trigger][result] += w;
+    }
+    return matrix;
+  };
+
+  const sigVelocity = (digits, isTarget) => {
+    if (digits.length < 40) return { velocity:0, signal:false };
+    const winA = digits.slice(-20), winB = digits.slice(-40,-20);
+    const fA = winA.filter(isTarget).length / 20;
+    const fB = winB.filter(isTarget).length / 20;
+    const v = (fA - fB) * 20;
+    return { velocity:v, signal: Math.abs(v) >= 3, rising: v > 0, freqA: Math.round(fA*100), freqB: Math.round(fB*100) };
+  };
+
+  const sigGaps = (digits) => {
+    const gaps = new Array(10).fill(0);
+    const lastSeen = new Array(10).fill(-1);
+    digits.forEach((d,i) => { if (lastSeen[d]>=0) gaps[d]=i-lastSeen[d]; lastSeen[d]=i; });
+    const n = digits.length;
+    for (let d=0; d<=9; d++) { if(lastSeen[d]>=0) gaps[d]=n-1-lastSeen[d]; else gaps[d]=n; }
+    return gaps;
+  };
+
+  const sigStreakExhaustion = (digits, isTarget) => {
+    if (digits.length < 10) return { active:false };
+    const recent = digits.slice(-30);
+    const isOpp = (d) => !isTarget(d) && d !== 5; // skip the barrier digit
+    let streakLen = 0;
+    for (let i = recent.length-1; i >= 0; i--) { if (isOpp(recent[i])) streakLen++; else break; }
+    let maxS = 0, cur = 0;
+    recent.forEach(d => { if(isOpp(d)){cur++;maxS=Math.max(maxS,cur);}else cur=0; });
+    const thresh = Math.max(3, Math.round(maxS * 0.7));
+    return { active: streakLen >= thresh && streakLen >= 3, streakLen, threshold: thresh };
+  };
+
   document.getElementById('sig-analyse-btn').addEventListener('click', () => {
-    const strategy = document.getElementById('sig-strategy').value;
-    const sens     = document.getElementById('sig-sensitivity').value;
-    const win      = parseInt(document.getElementById('sig-window').value);
-    const ticks    = Ticks.getLastN(win);
+    const strategy  = document.getElementById('sig-strategy').value;
+    const sens      = document.getElementById('sig-sensitivity').value;
+    const win       = parseInt(document.getElementById('sig-window').value);
+    const ticks     = Ticks.getLastN(win);
     const resultsEl = document.getElementById('sig-results');
 
     if (!ticks.length) {
@@ -973,7 +1052,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const threshold = sens === 'conservative' ? 55 : sens === 'balanced' ? 52 : 50;
+    const threshold = sens === 'conservative' ? 58 : sens === 'balanced' ? 52 : 48;
+    const digits = ticks.map(p => sigExtractDigit(p));
     const eo  = Utils.calcEvenOdd(ticks);
     const ou  = Utils.calcOverUnder(ticks, currentBarrier);
     const ds  = Utils.calcDigitStats(ticks);
@@ -983,9 +1063,113 @@ document.addEventListener('DOMContentLoaded', () => {
     const overStreak  = Analysis.getStreak(ticks, 'over5');
     const underStreak = Analysis.getStreak(ticks, 'under5');
 
-    let signal = 'WAIT', confidence = 50, entry = [], reason = '', color = 'var(--text-muted)';
+    // Entropy check
+    const entropy = sigCalcEntropy(digits);
+    const entBadge = document.getElementById('sig-entropy-badge');
+    if (entBadge) {
+      entBadge.style.display = 'block';
+      const entPct = Math.round((entropy/3.321)*100);
+      const entColor = entropy > 3.15 ? '#fb7185' : entropy < 2.3 ? '#34d399' : '#fbbf24';
+      entBadge.style.borderColor = entColor; entBadge.style.color = entColor;
+      entBadge.style.background = 'rgba(0,0,0,0.3)';
+      const entLabel = entropy > 3.15 ? '⚠ HIGH CHAOS — signals unreliable' : entropy < 2.3 ? '✓ LOW ENTROPY — strong skew' : '• NORMAL — moderate randomness';
+      entBadge.textContent = `Entropy: ${entropy.toFixed(3)} (${entPct}% chaos)  ${entLabel}`;
+    }
 
-    if (strategy === 'even-odd') {
+    let signal = 'WAIT', confidence = 50, entry = [], reason = '', color = 'var(--text-muted)';
+    let extraInfo = '';
+
+    if (strategy === 'transition-matrix') {
+      // Best skip-1 pattern for under4 and over5
+      const skip = 1;
+      const matrix = sigBuildMatrix(digits, skip);
+      let bestUnder = {trigger:-1, rate:0}, bestOver = {trigger:-1, rate:0};
+      for (let t = 0; t <= 9; t++) {
+        const row = matrix[t];
+        const total = row.reduce((a,b)=>a+b,0);
+        if (total < 3) continue;
+        const underHits = row.slice(0,4).reduce((a,b)=>a+b,0);
+        const overHits  = [row[6],row[7],row[8],row[9]].reduce((a,b)=>a+b,0);
+        const uRate = underHits/total, oRate = overHits/total;
+        if (uRate > bestUnder.rate) { bestUnder = {trigger:t, rate:uRate, total}; }
+        if (oRate > bestOver.rate)  { bestOver  = {trigger:t, rate:oRate, total}; }
+      }
+      const uPct = Math.round(bestUnder.rate*100), oPct = Math.round(bestOver.rate*100);
+      if (bestUnder.rate >= 0.52 && bestUnder.rate >= bestOver.rate) {
+        signal = `UNDER 4 — watch for digit ${bestUnder.trigger}`;
+        confidence = uPct + (entropy < 2.3 ? 5 : entropy > 3.15 ? -8 : 0);
+        color = 'var(--cyan)'; entry = [0,1,2,3];
+        reason = `Trigger digit ${bestUnder.trigger} → UNDER 4 at ${uPct}% (matrix, skip-1, exp-decay). Entropy: ${entropy.toFixed(2)}`;
+      } else if (bestOver.rate >= 0.52) {
+        signal = `OVER 5 — watch for digit ${bestOver.trigger}`;
+        confidence = oPct + (entropy < 2.3 ? 5 : entropy > 3.15 ? -8 : 0);
+        color = 'var(--green)'; entry = [6,7,8,9];
+        reason = `Trigger digit ${bestOver.trigger} → OVER 5 at ${oPct}% (matrix, skip-1, exp-decay). Entropy: ${entropy.toFixed(2)}`;
+      } else {
+        reason = `No strong transition pattern. Best under: ${uPct}% (trigger ${bestUnder.trigger}), over: ${oPct}% (trigger ${bestOver.trigger}). Need ≥52%.`;
+      }
+      if (entropy > 3.15 && signal !== 'WAIT') { signal += ' [LOW CONF]'; confidence = Math.max(confidence-10, 45); }
+
+    } else if (strategy === 'digit-velocity') {
+      const underV = sigVelocity(digits, d => d <= 3);
+      const overV  = sigVelocity(digits, d => d >= 6);
+      if (underV.signal && underV.rising && underV.velocity >= overV.velocity) {
+        signal = 'UNDER 4 ACCELERATING';
+        confidence = Math.min(95, 50 + Math.round(Math.abs(underV.velocity) * 4));
+        color = 'var(--cyan)'; entry = [0,1,2,3];
+        reason = `Under-4 freq: ${underV.freqA}% (recent 20) vs ${underV.freqB}% (prev 20). Rising velocity +${underV.velocity.toFixed(1)} ticks.`;
+      } else if (overV.signal && overV.rising) {
+        signal = 'OVER 5 ACCELERATING';
+        confidence = Math.min(95, 50 + Math.round(Math.abs(overV.velocity) * 4));
+        color = 'var(--green)'; entry = [6,7,8,9];
+        reason = `Over-5 freq: ${overV.freqA}% (recent 20) vs ${overV.freqB}% (prev 20). Rising velocity +${overV.velocity.toFixed(1)} ticks.`;
+      } else {
+        reason = `No significant velocity divergence. Under velocity: ${underV.velocity.toFixed(1)}, Over: ${overV.velocity.toFixed(1)}. Need ±3.`;
+      }
+
+    } else if (strategy === 'streak-exhaustion') {
+      const underTarget = d => d <= 3;
+      const overTarget  = d => d >= 6;
+      const underStrX = sigStreakExhaustion(digits, underTarget);
+      const overStrX  = sigStreakExhaustion(digits, overTarget);
+      if (underStrX.active) {
+        signal = `UNDER 4 REVERSAL (streak exhausted)`;
+        confidence = Math.min(88, 55 + underStrX.streakLen * 3);
+        color = 'var(--cyan)'; entry = [0,1,2,3];
+        reason = `Over-5 streak of ${underStrX.streakLen} ticks detected (threshold: ${underStrX.threshold}). Exhaustion reversal signal — expect under-4 to appear.`;
+      } else if (overStrX.active) {
+        signal = `OVER 5 REVERSAL (streak exhausted)`;
+        confidence = Math.min(88, 55 + overStrX.streakLen * 3);
+        color = 'var(--green)'; entry = [6,7,8,9];
+        reason = `Under-4 streak of ${overStrX.streakLen} ticks detected (threshold: ${overStrX.threshold}). Exhaustion reversal signal — expect over-5 to appear.`;
+      } else {
+        const uS = digits.slice(-10).filter(d=>d<=3).length;
+        const oS = digits.slice(-10).filter(d=>d>=6).length;
+        reason = `No exhaustion streak. Last 10 ticks: ${uS} under-4, ${oS} over-5. Streak thresholds not met.`;
+      }
+
+    } else if (strategy === 'digit-drought') {
+      const gaps = sigGaps(digits);
+      let maxGap = 0, droughtDigit = 0;
+      for (let d = 0; d <= 9; d++) { if (gaps[d] > maxGap) { maxGap = gaps[d]; droughtDigit = d; } }
+      if (maxGap >= 15) {
+        signal = `MATCHES on ${droughtDigit} (drought)`;
+        confidence = Math.min(90, 50 + maxGap * 1.5);
+        color = 'var(--gold)'; entry = [droughtDigit];
+        reason = `Digit ${droughtDigit} hasn't appeared in ${maxGap} ticks. Strong drought signal — overdue for a match.`;
+        extraInfo = `All gaps: ${gaps.map((g,i) => `${i}:${g}`).join(', ')}`;
+      } else if (maxGap >= 8) {
+        signal = `WATCH digit ${droughtDigit} (mild drought)`;
+        confidence = Math.min(70, 45 + maxGap * 1.5);
+        color = 'var(--gold)'; entry = [droughtDigit];
+        reason = `Digit ${droughtDigit} absent for ${maxGap} ticks. Moderate drought — monitor closely.`;
+      } else {
+        reason = `No significant drought. Max gap: ${maxGap} ticks (digit ${droughtDigit}). Need ≥8 for signal.`;
+        const gapStr = gaps.map((g,i) => `${i}:${g}`).join(' · ');
+        extraInfo = `Gaps: ${gapStr}`;
+      }
+
+    } else if (strategy === 'even-odd') {
       if (eo.oddPercent >= threshold && oddStreak >= 2)  { signal='BET EVEN'; confidence=eo.oddPercent; color='var(--cyan)'; reason=`Odd at ${eo.oddPercent}% (streak:${oddStreak}) — reversion expected`; entry=[0,2,4,6,8]; }
       else if (eo.evenPercent >= threshold && evenStreak >= 2) { signal='BET ODD'; confidence=eo.evenPercent; color='var(--gold)'; reason=`Even at ${eo.evenPercent}% (streak:${evenStreak}) — reversion expected`; entry=[1,3,5,7,9]; }
       else { reason=`No strong parity signal (${eo.evenPercent}% / ${eo.oddPercent}%)`; }
@@ -998,32 +1182,34 @@ document.addEventListener('DOMContentLoaded', () => {
       if (coldPct < 8) { signal=`MATCHES on ${cold}`; confidence=Math.round((1 - coldPct/10)*100); color='var(--green)'; reason=`Cold digit ${cold} at ${coldPct}% — overdue`; entry=[cold]; }
       else { signal=`DIFFERS on ${hot}`; confidence=100 - ds.percentages[hot]; color='var(--red)'; reason=`Hot digit ${hot} at ${ds.percentages[hot]}% — differs wins ${100-ds.percentages[hot]}% of time`; entry=[cold]; }
     } else if (strategy === 'rise-fall') {
-      let rises=0, falls=0;
-      for (let i=1; i<ticks.length; i++) { if(ticks[i]>ticks[i-1]) rises++; else if(ticks[i]<ticks[i-1]) falls++; }
+      let rises=0;
+      for (let i=1; i<ticks.length; i++) { if(ticks[i]>ticks[i-1]) rises++; }
       const risePct = Math.round((rises/(ticks.length-1))*100);
       if (risePct >= threshold) { signal='FALL'; confidence=risePct; color='var(--red)'; reason=`${risePct}% rises in last ${win} ticks — fall expected`; }
-      else if ((100-risePct) >= threshold) { signal='RISE'; confidence=100-risePct; color='var(--green)'; reason=`${100-risePct}% falls in last ${win} ticks — rise expected`; }
-      else { reason=`No clear momentum (${risePct}% rise / ${100-risePct}% fall)`; }
+      else if ((100-risePct) >= threshold) { signal='RISE'; confidence=100-risePct; color='var(--green)'; reason=`${100-risePct}% falls — rise expected`; }
+      else { reason=`No clear momentum (${risePct}% rise)`; }
     }
 
-    const confColor = confidence >= 60 ? 'var(--green)' : confidence >= 52 ? 'var(--gold)' : 'var(--text-muted)';
+    confidence = Math.max(0, Math.min(100, confidence));
+    const confColor = confidence >= 65 ? 'var(--green)' : confidence >= 52 ? 'var(--gold)' : 'var(--text-muted)';
     const entryHTML = entry.length ? `<div class="sig-entry-pts">${entry.map(e=>`<div class="sig-ep">${e}</div>`).join('')}</div>` : '';
 
     resultsEl.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div class="signal-card">
           <div class="sig-label">SIGNAL</div>
-          <div class="sig-value" style="color:${color};">${signal}</div>
+          <div class="sig-value" style="color:${color};font-size:clamp(0.9rem,2vw,1.15rem);">${signal}</div>
           ${entryHTML}
         </div>
         <div class="signal-card">
           <div class="sig-label">CONFIDENCE</div>
           <div class="sig-value" style="color:${confColor};">${confidence}%</div>
-          <div class="progress-bar mt-8" style="height:6px;"><div class="progress-fill" style="width:${confidence}%;background:${confColor};"></div></div>
+          <div class="progress-bar mt-8" style="height:6px;"><div class="progress-fill" style="width:${confidence}%;background:${confColor};transition:width 0.6s ease;"></div></div>
         </div>
         <div class="signal-card">
           <div class="sig-label">REASONING</div>
-          <div class="mono mt-8" style="font-size:0.72rem;color:var(--text-secondary);line-height:1.6;">${reason}</div>
+          <div class="mono mt-8" style="font-size:0.68rem;color:var(--text-secondary);line-height:1.7;">${reason}</div>
+          ${extraInfo ? `<div class="mono mt-6" style="font-size:0.6rem;color:var(--text-muted);line-height:1.5;">${extraInfo}</div>` : ''}
         </div>
       </div>`;
 
@@ -1038,11 +1224,11 @@ document.addEventListener('DOMContentLoaded', () => {
       histEl.innerHTML = signalHistory.map(s => `
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);">
           <div>
-            <span style="font-family:var(--font-display);font-weight:700;color:${s.color};">${s.signal}</span>
-            <span class="mono text-muted" style="font-size:0.65rem;margin-left:8px;">${s.strategy}</span>
+            <span style="font-family:var(--font-display);font-weight:700;color:${s.color};font-size:0.82rem;">${s.signal}</span>
+            <span class="mono text-muted" style="font-size:0.62rem;margin-left:8px;">${s.strategy}</span>
           </div>
           <div class="flex flex-gap-8" style="align-items:center;">
-            <span class="mono" style="font-size:0.68rem;color:${s.confidence>=55?'var(--green)':'var(--text-muted)'};">${s.confidence}%</span>
+            <span class="mono" style="font-size:0.68rem;color:${s.confidence>=58?'var(--green)':s.confidence>=50?'var(--gold)':'var(--text-muted)'};">${s.confidence}%</span>
             <span class="mono text-muted" style="font-size:0.6rem;">${s.ts}</span>
           </div>
         </div>`).join('');
