@@ -704,13 +704,18 @@ function runScan() {
 
   DerivAPI.on('history', (data) => {
     tickHistory = data.prices || [];
+    // CRITICAL: capture pip_size so digit extraction is accurate
+    if (data.pip_size) {
+      scanPipSize = data.pip_size;
+      scanLog(`> pip_size: ${scanPipSize} decimal places`);
+    }
     if (tickHistory.length < 20) {
       scanLog('> ERROR: Not enough tick data. Try another market.');
       setTimeout(() => goSelectMarket(), 2500);
       return;
     }
     setProgress(50);
-    scanLog(`> Received ${tickHistory.length} ticks. Analyzing...`);
+    scanLog(`> Received ${tickHistory.length} ticks (dp:${scanPipSize}). Analyzing...`);
     animateTickFeed(tickHistory.slice(-20));
     setTimeout(() => analyzePattern(), 800);
   });
@@ -747,7 +752,7 @@ function animateTickFeed(ticks) {
   feed.innerHTML = '';
   ticks.forEach((price, i) => {
     setTimeout(() => {
-      const lastDigit = extractDigit(price);
+      const lastDigit = extractDigit(price, scanPipSize);
       const row = document.createElement('div');
       row.className = 'tick-row';
       row.innerHTML = `<span>tick_${i+1}</span><span>${price}</span><span class="text-cyan">[${lastDigit}]</span>`;
@@ -757,16 +762,28 @@ function animateTickFeed(ticks) {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  DIGIT EXTRACTION — handles float prices, digit 0 included
+//  DIGIT EXTRACTION — correct trailing-zero handling
 // ══════════════════════════════════════════════════════════════
-function extractDigit(price) {
-  // Convert to string, handle scientific notation
-  const s = typeof price === 'number' ? price.toFixed(5) : String(price);
-  // Get last character that is a digit
-  for (let i = s.length - 1; i >= 0; i--) {
-    if (s[i] >= '0' && s[i] <= '9') return parseInt(s[i]);
+let scanPipSize = 2; // updated when live ticks arrive with pip_size
+
+function extractDigit(price, pipSize) {
+  // If string passed (e.g. from Deriv API raw): use directly
+  if (typeof price === 'string') {
+    const s = price.trim();
+    return parseInt(s[s.length - 1]);
   }
-  return 0;
+  // If pip_size known, format to correct decimal places
+  const dp = pipSize !== undefined ? pipSize : scanPipSize;
+  const s = price.toFixed(dp);
+  return parseInt(s[s.length - 1]);
+}
+
+// For tick history prices (array of floats from ticks_history API)
+// ticks_history returns prices with correct decimal precision as numbers
+// BUT JSON.parse loses trailing zeros. We need pip_size.
+// We get pip_size from live ticks - it's stored in scanPipSize.
+function extractDigits(prices) {
+  return prices.map(p => extractDigit(p, scanPipSize));
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -884,7 +901,7 @@ function analyzePattern() {
   setProgress(55);
 
   // CRITICAL FIX: use extractDigit() which correctly handles digit 0
-  const digits = tickHistory.map(p => extractDigit(p));
+  const digits = extractDigits(tickHistory); // uses scanPipSize for correct trailing zeros
   const skip   = skipCount_(selectedStrat);
   const under  = isUnder(selectedStrat);
   const minOcc = minOccurrences(selectedStrat);
@@ -1080,8 +1097,11 @@ function buildPatternPreview(skip, under) {
 //  LIVE TICK HANDLER — state machine
 // ══════════════════════════════════════════════════════════════
 function onLiveTick(data) {
+  // Update pip_size from live tick so history scanning uses correct decimal places
+  if (data.pip_size) scanPipSize = data.pip_size;
   const price = data.quote;
-  const digit = extractDigit(price);
+  // For live tick: use raw quote value with pip_size for correct digit
+  const digit = extractDigit(price, data.pip_size || scanPipSize);
   const under = isUnder(selectedStrat);
   const skip  = skipCount_(selectedStrat);
 
