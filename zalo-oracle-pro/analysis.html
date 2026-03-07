@@ -814,7 +814,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Entropy display
     const digEntBadge = document.getElementById('dig-entropy-badge');
     if (digEntBadge) {
-      const allDigits = ticks.map(p => { const s=typeof p==='number'?p.toFixed(5):String(p); for(let i=s.length-1;i>=0;i--){if(s[i]>='0'&&s[i]<='9')return parseInt(s[i]);}return 0; });
+      const _pipSz = (typeof Ticks !== 'undefined' && Ticks.getPipSize) ? Ticks.getPipSize() : 2;
+      const allDigits = ticks.map(p => { if(typeof p==='string'){const ss=p.trim();return parseInt(ss[ss.length-1]);} const ss=p.toFixed(_pipSz); return parseInt(ss[ss.length-1]); });
       const cnts = new Array(10).fill(0); allDigits.forEach(d=>cnts[d]++);
       const nn = allDigits.length; let H=0;
       cnts.forEach(c=>{ if(c>0){const pp=c/nn; H-=pp*Math.log2(pp);} });
@@ -981,12 +982,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── SIGNAL ANALYZER ─────────────────────────────────────────────
   // ── ANALYSIS ENGINE HELPERS (mirrors Pattern Scout engine) ──────────────
+  // sigExtractDigit: uses Ticks.getPipSize() to correctly handle trailing zeros
   const sigExtractDigit = (price) => {
-    const s = typeof price === 'number' ? price.toFixed(5) : String(price);
-    for (let i = s.length - 1; i >= 0; i--) {
-      if (s[i] >= '0' && s[i] <= '9') return parseInt(s[i]);
-    }
-    return 0;
+    if (typeof price === 'string') { const s = price.trim(); return parseInt(s[s.length - 1]); }
+    const dp = (typeof Ticks !== 'undefined' && Ticks.getPipSize) ? Ticks.getPipSize() : 2;
+    const s = price.toFixed(dp);
+    return parseInt(s[s.length - 1]);
   };
 
   const sigCalcEntropy = (digits) => {
