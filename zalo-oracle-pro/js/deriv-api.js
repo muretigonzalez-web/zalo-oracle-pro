@@ -92,10 +92,15 @@ const DerivAPI = (() => {
         emit('authorized', data.authorize);
         break;
       case 'tick':
-        emit('tick', { symbol: data.tick.symbol, quote: data.tick.quote, epoch: data.tick.epoch });
+        emit('tick', { symbol: data.tick.symbol, quote: data.tick.quote, pip_size: data.tick.pip_size || 2, epoch: data.tick.epoch });
         break;
       case 'history':
-        emit('history', { prices: data.history ? data.history.prices : [], times: data.history ? data.history.times : [] });
+        // pip_size comes from ticks_history response root level
+        emit('history', {
+          prices   : data.history ? data.history.prices : [],
+          times    : data.history ? data.history.times  : [],
+          pip_size : data.pip_size || null,
+        });
         break;
       case 'proposal':
         if (data.proposal) emit('proposal', { id: data.proposal.id, ask_price: data.proposal.ask_price, payout: data.proposal.payout, longcode: data.proposal.longcode });
@@ -119,7 +124,7 @@ const DerivAPI = (() => {
               contract_id: c.contract_id, profit,
               buy_price: parseFloat(c.buy_price || 0), payout: parseFloat(c.payout || 0),
               is_won: profit > 0, status: c.status,
-              digit: c.exit_tick_display_value ? parseInt(String(c.exit_tick_display_value).slice(-1)) : null,
+              digit: c.exit_tick_display_value ? (() => { const s = String(c.exit_tick_display_value).trim(); return parseInt(s[s.length-1]); })() : null,
             });
           }
         }
