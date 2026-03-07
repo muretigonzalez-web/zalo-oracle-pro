@@ -450,6 +450,16 @@
   <!-- Markets -->
   <div style="max-width:900px;margin:0 auto;padding-bottom:120px;">
 
+    <div class="market-section">
+      <div class="market-section-title">⚡ VOLATILITY INDICES (2S TICK)</div>
+      <div class="market-grid" id="grid-vol"></div>
+    </div>
+
+    <div class="market-section">
+      <div class="market-section-title">🚀 VOLATILITY INDICES (1S TICK — FAST)</div>
+      <div class="market-grid" id="grid-vol1s"></div>
+    </div>
+
   </div>
 
   <div class="scan-launch">
@@ -685,10 +695,10 @@ function minOccurrences(s) { return (s === 'U1' || s === 'O1') ? 5 : 3; }
 //  RUN SCAN — fetch 100 ticks, analyze
 // ══════════════════════════════════════════════════════════════
 function runScan() {
-  scanLog('> Connecting to Deriv WebSocket...');
+  scanLog('> Initialising scan...');
   setProgress(5);
 
-  // Clear old listeners to avoid stacking
+  // Clear old listeners to avoid stacking across rescans
   DerivAPI.off('history');
   DerivAPI.off('error');
 
@@ -709,20 +719,27 @@ function runScan() {
     scanLog(`> ERROR: ${err.message || err.code || 'Unknown error'}`);
   });
 
-  // If already connected, fetch immediately — don't wait for 'open'
   const doFetch = () => {
-    scanLog('> Connected. Fetching last 100 ticks...');
-    setProgress(15);
+    scanLog('> Ready. Fetching last 100 ticks...');
+    setProgress(20);
     DerivAPI.getTickHistory(selectedMarket.symbol, 100);
   };
 
-  if (DerivAPI.isConnected) {
-    doFetch();
-  } else {
-    DerivAPI.off('open');
-    DerivAPI.on('open', doFetch);
-    DerivAPI.connect();
+  // waitReady: poll until WS is OPEN, then fire doFetch
+  // Handles all cases: already open, still connecting, not yet started
+  function waitReady(tries) {
+    if (tries > 80) { scanLog('> ERROR: Connection timeout. Please reload.'); return; }
+    const s = DerivAPI.socket;
+    if (s && s.readyState === WebSocket.OPEN) {
+      doFetch();
+    } else {
+      if (!s || s.readyState === WebSocket.CLOSED || s.readyState === WebSocket.CLOSING) {
+        DerivAPI.connect();
+      }
+      setTimeout(() => waitReady(tries + 1), 150);
+    }
   }
+  waitReady(0);
 }
 
 function animateTickFeed(ticks) {
