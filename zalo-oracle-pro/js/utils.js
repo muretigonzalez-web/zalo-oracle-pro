@@ -40,8 +40,21 @@ const Utils = (() => {
   // ─── DIGIT EXTRACTION ─────────────────────────────────────────────────────
 
   // Get the LAST DIGIT of a tick price
-  // Utils.getLastDigit(9574.83) → 3
-  const getLastDigit = (price) => {
+  // Utils.getLastDigit(9605.80, 2) → 0  (uses pip_size for correct trailing zeros)
+  // Utils.getLastDigit('9605.80') → 0   (string preserved exactly)
+  // Utils.getLastDigit(9605.8)    → 8   (float without pip_size - may be wrong for 0s)
+  const getLastDigit = (price, pipSize) => {
+    // If already a string, use directly - Deriv sometimes sends as string
+    if (typeof price === 'string') {
+      const s = price.trim();
+      return parseInt(s[s.length - 1]);
+    }
+    // If pip_size known, format correctly to preserve trailing zeros
+    if (pipSize !== undefined && pipSize !== null) {
+      const s = price.toFixed(pipSize);
+      return parseInt(s[s.length - 1]);
+    }
+    // Fallback: plain toString (may lose trailing zero)
     const str = price.toString();
     return parseInt(str[str.length - 1]);
   };
@@ -59,12 +72,12 @@ const Utils = (() => {
 
   // Given an array of tick prices, return digit frequency stats
   // Returns: { counts: {0:12, 1:8, ...}, percentages: {0:12.0, 1:8.0, ...} }
-  const calcDigitStats = (ticks) => {
+  const calcDigitStats = (ticks, pipSize) => {
     const counts = { 0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0 };
     const total  = ticks.length;
 
     ticks.forEach(price => {
-      const d = getLastDigit(price);
+      const d = getLastDigit(price, pipSize);
       counts[d]++;
     });
 
@@ -77,10 +90,10 @@ const Utils = (() => {
   };
 
   // Calculate Even vs Odd distribution from array of prices
-  const calcEvenOdd = (ticks) => {
+  const calcEvenOdd = (ticks, pipSize) => {
     let even = 0, odd = 0;
     ticks.forEach(price => {
-      getLastDigit(price) % 2 === 0 ? even++ : odd++;
+      getLastDigit(price, pipSize) % 2 === 0 ? even++ : odd++;
     });
     const total = ticks.length || 1;
     return {
@@ -92,10 +105,10 @@ const Utils = (() => {
   };
 
   // Calculate Over/Under distribution for a given barrier
-  const calcOverUnder = (ticks, barrier = 5) => {
+  const calcOverUnder = (ticks, barrier = 5, pipSize) => {
     let over = 0, under = 0, matches = 0;
     ticks.forEach(price => {
-      const d = getLastDigit(price);
+      const d = getLastDigit(price, pipSize);
       if (d > barrier)      over++;
       else if (d < barrier) under++;
       else                  matches++;
