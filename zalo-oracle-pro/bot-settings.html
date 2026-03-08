@@ -259,7 +259,7 @@
         <p class="mono text-muted mt-4" style="font-size:0.72rem;">Select a bot to configure and launch. Each bot has unique strategy logic and risk settings.</p>
       </div>
       <div class="flex flex-gap-8">
-        <span class="btag btag-green" style="font-size:0.65rem;padding:4px 10px;">7 Bots Available</span>
+        <span class="btag btag-green" style="font-size:0.65rem;padding:4px 10px;">9 Bots Available</span>
         <span class="btag btag-cyan" style="font-size:0.65rem;padding:4px 10px;">Live Trading</span>
       </div>
     </div>
@@ -444,10 +444,12 @@
 <script src="js/auth.js"></script>
 <script src="js/ticks.js"></script>
 <script src="js/bot-engine.js"></script>
+<script src="js/hl-engine.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   Auth.autoLogin();
   BotEngine.init();
+  HLEngine.init();
 
   let activeBot   = null;   // currently configured bot definition
   let isRunning   = false;
@@ -538,7 +540,56 @@ document.addEventListener('DOMContentLoaded', () => {
       iconBg    : 'rgba(0,230,118,0.08)',
       defaults  : { tradeType:'DIGITEVEN', contractType:'BOTH', barrier:'5', stake:0.35, multiplier:2.0, maxSteps:3, takeProfit:1.00, stopLoss:2.00, maxLosses:3, duration:1 }
     },
-  ];
+    {
+      id        : 'hl-sniper',
+      icon      : '🎯',
+      name      : 'H/L Barrier Sniper',
+      type      : 'Higher/Lower Dynamic Barrier',
+      desc      : 'Smart barrier bot using EMA crossover, ATR volatility, DMI momentum and S/R detection. Trades pullbacks and breakouts only — skips chop. Adaptive recovery reduces barrier difficulty on loss.',
+      stars     : 5,
+      tags      : [['Advanced','btag-red'],['Higher/Lower','btag-cyan'],['ATR Barrier','btag-gold'],['Smart Recovery','btag-green']],
+      accent    : '#f97316',
+      iconBg    : 'rgba(249,115,22,0.12)',
+      hlBot     : true,
+      hlProfile : 'sniper',
+      defaults  : {
+        tradeType:'CALL', contractType:'CALL', barrier:'5',
+        stake:0.35, multiplier:1.4, maxSteps:4,
+        takeProfit:3.00, stopLoss:2.50, maxLosses:8, duration:5,
+        hlConfig: {
+          modeProfile     : 'sniper',
+          minConfidence   : 6.5,
+          enablePinch     : false,
+          maxRecoveryTier : 3,
+          disabledModes   : ['REVERSAL'], // sniper = no reversals
+        }
+      }
+    },
+    {
+      id        : 'hl-elite',
+      icon      : '⚡',
+      name      : 'H/L Elite Quant Bot',
+      type      : 'Higher/Lower Quantitative Engine',
+      desc      : 'Full quantitative H/L engine: Kelly position sizing, probability estimation via Gaussian drift model, dynamic barrier scan across 7 candidates, pinch hedge in compression, 4-tier adaptive recovery with contract switching.',
+      stars     : 5,
+      tags      : [['Expert','btag-red'],['Higher/Lower','btag-cyan'],['Kelly Sizing','btag-gold'],['Pinch Hedge','btag-green']],
+      accent    : '#8b5cf6',
+      iconBg    : 'rgba(139,92,246,0.12)',
+      hlBot     : true,
+      hlProfile : 'elite',
+      defaults  : {
+        tradeType:'CALL', contractType:'CALL', barrier:'5',
+        stake:0.35, multiplier:1.4, maxSteps:4,
+        takeProfit:4.00, stopLoss:3.00, maxLosses:8, duration:5,
+        hlConfig: {
+          modeProfile     : 'elite',
+          minConfidence   : 6.0,
+          enablePinch     : true,  // elite uses pinch hedge
+          maxRecoveryTier : 4,
+          disabledModes   : [],    // all modes active
+        }
+      }
+    },
 
   // ── Render bot cards ───────────────────────────────────────────
   const grid = document.getElementById('bot-grid');
@@ -589,7 +640,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update run button state
     const runBtn = document.getElementById('cfg-run-btn');
-    if (BotEngine.getIsRunning()) {
+    const alreadyRunning = activeBot?.hlBot ? HLEngine.getIsRunning() : BotEngine.getIsRunning();
+    if (alreadyRunning) {
       runBtn.textContent = '■ STOP BOT';
       runBtn.className = 'config-run-btn stop';
     } else {
@@ -649,35 +701,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Run/Stop from config ───────────────────────────────────────
   window.handleConfigRun = () => {
-    if (BotEngine.getIsRunning()) {
-      BotEngine.stop('Manual stop');
+    const isHL = activeBot?.hlBot === true;
+
+    // ── STOP path ──
+    if (isHL ? HLEngine.getIsRunning() : BotEngine.getIsRunning()) {
+      if (isHL) HLEngine.stop('Manual stop');
+      else      BotEngine.stop('Manual stop');
+      return;
+    }
+
+    // ── START path ──
+    const market     = document.getElementById('cfg-market').value;
+    const stake      = parseFloat(document.getElementById('cfg-stake').value);
+    const takeProfit = parseFloat(document.getElementById('cfg-take-profit').value);
+    const stopLoss   = parseFloat(document.getElementById('cfg-stop-loss').value);
+
+    if (isHL) {
+      // Build HLEngine config from UI + bot hlConfig defaults
+      const hlDefaults = activeBot.defaults.hlConfig || {};
+      const hlConfig   = {
+        symbol          : market,
+        baseStake       : stake,
+        takeProfit,
+        stopLoss,
+        modeProfile     : hlDefaults.modeProfile     || 'sniper',
+        minConfidence   : hlDefaults.minConfidence   || 6.0,
+        enablePinch     : hlDefaults.enablePinch     ?? false,
+        maxRecoveryTier : hlDefaults.maxRecoveryTier || 3,
+        disabledModes   : hlDefaults.disabledModes   || [],
+      };
+      HLEngine.start(hlConfig);
+      logToPanel(`▶ ${activeBot.name} started — ${market}`, 'info');
+      logToPanel(`Stake:$${stake} | TP:$${takeProfit} | SL:$${stopLoss} | Profile:${hlConfig.modeProfile}`, 'info');
+      logToPanel('Waiting for 50 tick buffer before first trade...', 'info');
     } else {
-      // Build config from inputs
       const config = {
-        symbol       : document.getElementById('cfg-market').value,
+        symbol       : market,
         tradeType    : document.getElementById('cfg-trade-type').value,
         contractType : document.getElementById('cfg-contract-type').value,
         barrier      : parseInt(document.getElementById('cfg-barrier').value),
-        baseStake    : parseFloat(document.getElementById('cfg-stake').value),
+        baseStake    : stake,
         multiplier   : parseFloat(document.getElementById('cfg-multiplier').value),
         maxSteps     : parseInt(document.getElementById('cfg-max-steps').value),
         duration     : parseInt(document.getElementById('cfg-duration').value),
-        takeProfit   : parseFloat(document.getElementById('cfg-take-profit').value),
-        stopLoss     : parseFloat(document.getElementById('cfg-stop-loss').value),
+        takeProfit,
+        stopLoss,
         maxLosses    : parseInt(document.getElementById('cfg-max-losses').value),
       };
-
       BotEngine.setConfig(config);
       Ticks.subscribe(config.symbol);
       BotEngine.start();
-
       logToPanel(`▶ ${activeBot?.name || 'Bot'} started — ${config.symbol}`);
       logToPanel(`Stake: $${config.baseStake} | TP: $${config.takeProfit} | SL: $${config.stopLoss}`);
     }
   };
 
   window.stopCurrentBot = () => {
-    BotEngine.stop('Manual stop');
+    if (HLEngine.getIsRunning()) HLEngine.stop('Manual stop');
+    if (BotEngine.getIsRunning()) BotEngine.stop('Manual stop');
   };
 
   // ── Log to trade panel ─────────────────────────────────────────
@@ -738,6 +819,61 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Mark running card
+    document.querySelectorAll('.bot-card').forEach(c => c.classList.remove('running'));
+    if (isRunning && activeBot) {
+      const card = document.getElementById('card-' + activeBot.id);
+      if (card) card.classList.add('running');
+    }
+  });
+
+  // ── HLEngine callbacks ─────────────────────────────────────────
+  HLEngine.onLog((entry) => {
+    // Only pipe to panel when an HL bot is active
+    if (!activeBot?.hlBot) return;
+    logToPanel(entry.msg, entry.type === 'success' ? 'win' : entry.type === 'error' ? 'loss' : 'info');
+  });
+
+  HLEngine.onStats((stats) => {
+    if (!activeBot?.hlBot) return;
+    isRunning = HLEngine.getIsRunning();
+
+    const wr   = stats.runs > 0 ? Math.round((stats.won / stats.runs) * 100) : 0;
+    const pnl  = stats.pnl || 0;
+    document.getElementById('cfg-stat-runs').textContent = stats.runs;
+    document.getElementById('cfg-stat-won').textContent  = stats.won;
+    document.getElementById('cfg-stat-lost').textContent = stats.lost;
+    document.getElementById('cfg-stat-wr').textContent   = `${wr}%`;
+    const pnlEl = document.getElementById('cfg-stat-pnl');
+    pnlEl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
+    pnlEl.style.color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+
+    // Recovery badge
+    const tier = stats.recoveryTier || 0;
+    if (tier > 0) logToPanel(`Recovery Tier ${tier} active`, 'info');
+
+    const runBtn = document.getElementById('cfg-run-btn');
+    if (isRunning) {
+      runBtn.textContent = '■ STOP BOT';
+      runBtn.className = 'config-run-btn stop';
+    } else {
+      runBtn.textContent = '▶ RUN BOT';
+      runBtn.className = 'config-run-btn start';
+    }
+
+    const strip = document.getElementById('status-strip');
+    if (isRunning) {
+      strip.classList.add('active');
+      document.getElementById('strip-bot-name').textContent = activeBot?.name || '--';
+      document.getElementById('strip-market').textContent   = HLEngine.getConfig?.()?.symbol || '--';
+      document.getElementById('strip-stake').textContent    = `$${HLEngine.getCurrentStake?.()?.toFixed(2) || '--'}`;
+      document.getElementById('strip-runs').textContent     = stats.runs;
+      const stripPnl = document.getElementById('strip-pnl');
+      stripPnl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
+      stripPnl.style.color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    } else {
+      strip.classList.remove('active');
+    }
+
     document.querySelectorAll('.bot-card').forEach(c => c.classList.remove('running'));
     if (isRunning && activeBot) {
       const card = document.getElementById('card-' + activeBot.id);
